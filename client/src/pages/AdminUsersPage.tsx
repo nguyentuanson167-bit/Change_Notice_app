@@ -8,11 +8,18 @@ type AdminUser = {
   name: string;
   email: string;
   department: string;
+  workshopType: "STERILE" | "NON_STERILE" | "ALL";
   active: boolean;
   roles: { role: AdminRole }[];
 };
 
-const emptyUser = { username: "", name: "", email: "", department: "", roles: [] as string[] };
+const workshopLabels = {
+  ALL: "Tất cả xưởng",
+  STERILE: "Xưởng vô trùng",
+  NON_STERILE: "Xưởng không vô trùng"
+} as const;
+
+const emptyUser = { username: "", name: "", email: "", department: "", workshopType: "ALL", roles: [] as string[] };
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -56,6 +63,14 @@ export function AdminUsersPage() {
         <label>Họ tên<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
         <label>Email<input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
         <label>Phòng ban<input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></label>
+        <label>
+          Phạm vi xưởng
+          <select value={form.workshopType} onChange={(e) => setForm({ ...form, workshopType: e.target.value })}>
+            <option value="ALL">Tất cả xưởng</option>
+            <option value="STERILE">Xưởng vô trùng</option>
+            <option value="NON_STERILE">Xưởng không vô trùng</option>
+          </select>
+        </label>
         <div className="wide checkbox-row">
           {roles.map((role) => (
             <label key={role.id}>
@@ -82,6 +97,7 @@ export function AdminUsersPage() {
               <th>Tài khoản</th>
               <th>Họ tên</th>
               <th>Phòng ban</th>
+              <th>Phạm vi xưởng</th>
               <th>Vai trò</th>
               <th>Trạng thái</th>
               <th></th>
@@ -93,6 +109,7 @@ export function AdminUsersPage() {
                 <td>{user.username}<br /><small>{user.email}</small></td>
                 <td>{user.name}</td>
                 <td>{user.department}</td>
+                <td>{workshopLabels[user.workshopType]}</td>
                 <td>{user.roles.map((item) => item.role.code).join(", ")}</td>
                 <td>{user.active ? "Đang hoạt động" : "Đã vô hiệu"}</td>
                 <td><button onClick={() => toggleActive(user)}>{user.active ? "Vô hiệu" : "Kích hoạt"}</button></td>

@@ -11,6 +11,12 @@ type Props = {
   children: React.ReactNode;
 };
 
+const workshopLabels: Record<string, string> = {
+  ALL: "Tất cả xưởng",
+  STERILE: "Xưởng vô trùng",
+  NON_STERILE: "Xưởng không vô trùng"
+};
+
 export function Layout({ user, nav, navigate, onLogout, children }: Props) {
   const isAdmin = user.roles.includes("ADMIN");
   async function logout() {
@@ -31,6 +37,12 @@ export function Layout({ user, nav, navigate, onLogout, children }: Props) {
         <button className={nav.page === "browse" ? "active" : ""} onClick={() => navigate({ page: "browse" })}>
           Tra cứu TBTĐ
         </button>
+        <button onClick={() => navigate({ page: "browse", workshopType: "STERILE" })}>
+          Tra cứu TBTĐ xưởng vô trùng
+        </button>
+        <button onClick={() => navigate({ page: "browse", workshopType: "NON_STERILE" })}>
+          Tra cứu TBTĐ xưởng không vô trùng
+        </button>
         <button onClick={() => navigate({ page: "browse", view: "my-queue" })}>Chờ tôi xử lý</button>
         <button className={nav.page === "create" ? "active" : ""} onClick={() => navigate({ page: "create" })}>
           Tạo TBTĐ
@@ -45,7 +57,7 @@ export function Layout({ user, nav, navigate, onLogout, children }: Props) {
         <header className="topbar">
           <div>
             <strong>{user.name}</strong>
-            <span>{user.department}</span>
+            <span>{user.department} · {workshopLabels[user.workshopType] || user.workshopType}</span>
           </div>
           <div className="role-list">{user.roles.join(" | ")}</div>
           <button className="icon-button" onClick={logout} title="Đăng xuất">

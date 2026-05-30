@@ -1234,6 +1234,13 @@ The following fixes were added after initial MVP implementation:
   - Legacy DOC attachments show an open/download path plus reference-text annotation guidance.
 - Move form action buttons below the attachment block so the edit flow reads: form fields, attachments, then save/submit/detail actions.
 - Add the QA Deputy / Phó phòng ĐBCL signature slot to the printed Change Notice template.
+- Add workshop scoping:
+  - Store `workshopType` on users and TBTĐ records.
+  - Split browse entry points into `Tra cứu TBTĐ xưởng vô trùng` and `Tra cứu TBTĐ xưởng không vô trùng`.
+  - Restrict NCPT authors to creating TBTĐ records only for their assigned workshop.
+  - Replace generic NCPT lead approval with scoped roles: `NCPT_LEAD_STERILE`, `NCPT_LEAD_NON_STERILE`.
+  - Allow `NCPT_HEAD` to approve the NCPT step for either workshop in place of the team lead.
+  - Add workflow tests for wrong-workshop lead rejection and NCPT head substitution.
 - Verification for this follow-up:
   - Run `npm run test`.
   - Run `npm run build`.

@@ -4,7 +4,9 @@ import { DEMO_PASSWORD } from "../server/src/seedPasswords";
 
 const roles = [
   ["AUTHOR", "Nhân viên NCPT"],
-  ["NCPT_LEAD", "Phụ trách / Trưởng nhóm NCPT"],
+  ["NCPT_LEAD_NON_STERILE", "Tổ trưởng NCPT xưởng không vô trùng"],
+  ["NCPT_LEAD_STERILE", "Tổ trưởng NCPT xưởng vô trùng"],
+  ["NCPT_HEAD", "Trưởng phòng NCPT"],
   ["QA_DEPUTY", "Phó phòng ĐBCL"],
   ["QA_HEAD", "Trưởng phòng ĐBCL"],
   ["PROD_DIRECTOR", "Giám đốc sản xuất"],
@@ -13,21 +15,24 @@ const roles = [
 ] as const;
 
 const users = [
-  ["author", "Nguyễn Văn Anh", "author@vinphaco.local", "Phòng NCPT / R&D", ["AUTHOR"]],
-  ["author2", "Trần Thị Bình", "author2@vinphaco.local", "Phòng NCPT / R&D", ["AUTHOR"]],
-  ["lead", "Lê Văn Cường", "lead@vinphaco.local", "Phòng NCPT / R&D", ["NCPT_LEAD"]],
-  ["qa-deputy", "Phạm Thị Dung", "qa-deputy@vinphaco.local", "Phòng ĐBCL / QA", ["QA_DEPUTY"]],
-  ["qa-head", "Hoàng Văn Em", "qa-head@vinphaco.local", "Phòng ĐBCL / QA", ["QA_HEAD"]],
-  ["director", "Đỗ Văn Giang", "director@vinphaco.local", "BGĐ sản xuất", ["PROD_DIRECTOR"]],
-  ["admin", "Quản trị hệ thống", "admin@vinphaco.local", "IT/ĐBCL", ["ADMIN"]],
-  ["viewer", "Người xem", "viewer@vinphaco.local", "Xưởng sản xuất / Factory", ["VIEWER"]]
+  ["author", "Nguyễn Văn Anh", "author@vinphaco.local", "Phòng NCPT / R&D", "NON_STERILE", ["AUTHOR"]],
+  ["author2", "Trần Thị Bình", "author2@vinphaco.local", "Phòng NCPT / R&D", "STERILE", ["AUTHOR"]],
+  ["lead", "Lê Văn Cường", "lead@vinphaco.local", "Phòng NCPT / R&D", "NON_STERILE", ["NCPT_LEAD_NON_STERILE"]],
+  ["lead-sterile", "Mai Thị Hạnh", "lead-sterile@vinphaco.local", "Phòng NCPT / R&D", "STERILE", ["NCPT_LEAD_STERILE"]],
+  ["ncpt-head", "Vũ Minh Khoa", "ncpt-head@vinphaco.local", "Phòng NCPT / R&D", "ALL", ["NCPT_HEAD"]],
+  ["qa-deputy", "Phạm Thị Dung", "qa-deputy@vinphaco.local", "Phòng ĐBCL / QA", "ALL", ["QA_DEPUTY"]],
+  ["qa-head", "Hoàng Văn Em", "qa-head@vinphaco.local", "Phòng ĐBCL / QA", "ALL", ["QA_HEAD"]],
+  ["director", "Đỗ Văn Giang", "director@vinphaco.local", "BGĐ sản xuất", "ALL", ["PROD_DIRECTOR"]],
+  ["admin", "Quản trị hệ thống", "admin@vinphaco.local", "IT/ĐBCL", "ALL", ["ADMIN"]],
+  ["viewer", "Người xem", "viewer@vinphaco.local", "Xưởng sản xuất / Factory", "ALL", ["VIEWER"]]
 ] as const;
 
-function noticeBase(authorId: string) {
+function noticeBase(authorId: string, workshopType: "STERILE" | "NON_STERILE" = "NON_STERILE") {
   return {
     recipient: "Ban Giám đốc sản xuất",
     proposerName: "Nguyễn Văn Anh",
     proposerDepartment: "Phòng Nghiên cứu phát triển / R&D",
+    workshopType,
     productName: "Vinmagel",
     manufacturingProcessCode: "NCPT/QT-PC/2025-001",
     issuedDate: new Date("2025-01-24T00:00:00.000Z"),
@@ -54,11 +59,11 @@ async function main() {
   }
 
   const userByUsername = new Map<string, string>();
-  for (const [username, name, email, department, userRoles] of users) {
+  for (const [username, name, email, department, workshopType, userRoles] of users) {
     const user = await prisma.user.upsert({
       where: { username },
-      update: { name, email, department, passwordHash, active: true },
-      create: { username, name, email, department, passwordHash, active: true }
+      update: { name, email, department, workshopType, passwordHash, active: true },
+      create: { username, name, email, department, workshopType, passwordHash, active: true }
     });
     userByUsername.set(username, user.id);
 
@@ -75,6 +80,7 @@ async function main() {
 
   const authorId = userByUsername.get("author")!;
   const leadId = userByUsername.get("lead")!;
+  const sterileLeadId = userByUsername.get("lead-sterile")!;
   const qaDeputyId = userByUsername.get("qa-deputy")!;
   const qaHeadId = userByUsername.get("qa-head")!;
   const directorId = userByUsername.get("director")!;
@@ -83,7 +89,7 @@ async function main() {
     where: { code: "TBTD-NCPT-2026-0001" },
     update: {},
     create: {
-      ...noticeBase(authorId),
+      ...noticeBase(authorId, "NON_STERILE"),
       code: "TBTD-NCPT-2026-0001",
       title: "Cập nhật thông số kiểm tra bán thành phẩm",
       changeContent:
@@ -96,7 +102,7 @@ async function main() {
     where: { code: "TBTD-NCPT-2026-0002" },
     update: {},
     create: {
-      ...noticeBase(authorId),
+      ...noticeBase(authorId, "NON_STERILE"),
       code: "TBTD-NCPT-2026-0002",
       title: "Thay đổi bước trộn sau pha chế",
       changeContent:
@@ -118,7 +124,7 @@ async function main() {
       {
         noticeId: pending.id,
         sequence: 2,
-        requiredRole: "NCPT_LEAD",
+        requiredRole: "NCPT_LEAD_NON_STERILE",
         action: "SIGNED",
         signerId: leadId,
         signatureMeaning: "Đã kiểm tra và xác nhận"
@@ -134,7 +140,7 @@ async function main() {
     where: { code: "TBTD-NCPT-2026-0003" },
     update: {},
     create: {
-      ...noticeBase(authorId),
+      ...noticeBase(authorId, "STERILE"),
       code: "TBTD-NCPT-2026-0003",
       title: "Cập nhật quy trình đóng gói thành phẩm",
       changeContent:
@@ -145,7 +151,7 @@ async function main() {
 
   const approvedSteps = [
       ["AUTHOR", "SUBMITTED", authorId, "Đã soạn và gửi"],
-      ["NCPT_LEAD", "SIGNED", leadId, "Đã kiểm tra và xác nhận"],
+      ["NCPT_LEAD_STERILE", "SIGNED", sterileLeadId, "Đã kiểm tra và xác nhận"],
       ["QA_DEPUTY", "SIGNED", qaDeputyId, "Đã thẩm định"],
       ["QA_HEAD", "SIGNED", qaHeadId, "Đã phê duyệt cấp phòng QA"],
       ["PROD_DIRECTOR", "APPROVED", directorId, "Phê duyệt cuối cùng"]
@@ -167,7 +173,7 @@ async function main() {
   for (const [receivingUnit, versionLabel] of [
     ["Phòng NCPT / R&D", "Bản gốc / Original"],
     ["Phòng ĐBCL / QA", "Bản copy / Copy"],
-    ["Xưởng sản xuất / Factory", "Bản copy / Copy"]
+    ["Xưởng vô trùng / Factory", "Bản copy / Copy"]
   ]) {
     const existing = await prisma.distribution.findFirst({
       where: { noticeId: approved.id, receivingUnit }

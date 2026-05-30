@@ -13,6 +13,7 @@ const userSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   department: z.string().min(1),
+  workshopType: z.enum(["STERILE", "NON_STERILE", "ALL"]).default("ALL"),
   roles: z.array(z.string()).default([])
 });
 
@@ -42,6 +43,7 @@ adminUsersRouter.post("/admin/users", async (req, res) => {
       name: parsed.data.name,
       email: parsed.data.email,
       department: parsed.data.department,
+      workshopType: parsed.data.workshopType,
       passwordHash
     }
   });
@@ -65,7 +67,8 @@ adminUsersRouter.put("/admin/users/:id", async (req, res) => {
       username: parsed.data.username,
       name: parsed.data.name,
       email: parsed.data.email,
-      department: parsed.data.department
+      department: parsed.data.department,
+      workshopType: parsed.data.workshopType
     }
   });
   if (parsed.data.roles) await setRoles(user.id, parsed.data.roles);

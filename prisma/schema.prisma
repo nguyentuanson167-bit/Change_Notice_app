@@ -14,6 +14,7 @@ model User {
   email            String         @unique
   passwordHash     String
   department       String
+  workshopType     String         @default("ALL")
   active           Boolean        @default(true)
   roles            UserRole[]
   authored         ChangeNotification[] @relation("AuthorNotices")
@@ -50,6 +51,7 @@ model ChangeNotification {
   recipient                String
   proposerName             String
   proposerDepartment       String
+  workshopType             String
   productName              String
   manufacturingProcessCode String
   issuedDate               DateTime

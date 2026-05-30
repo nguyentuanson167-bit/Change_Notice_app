@@ -1,5 +1,8 @@
 export type RoleCode =
   | "AUTHOR"
+  | "NCPT_LEAD_NON_STERILE"
+  | "NCPT_LEAD_STERILE"
+  | "NCPT_HEAD"
   | "NCPT_LEAD"
   | "QA_DEPUTY"
   | "QA_HEAD"
@@ -26,9 +29,12 @@ export type User = {
   name: string;
   email: string;
   department: string;
+  workshopType: WorkshopType | "ALL";
   active: boolean;
   roles: RoleCode[];
 };
+
+export type WorkshopType = "STERILE" | "NON_STERILE";
 
 export type Attachment = {
   id: string;
@@ -101,6 +107,7 @@ export type ChangeNotice = {
   recipient: string;
   proposerName: string;
   proposerDepartment: string;
+  workshopType: WorkshopType;
   productName: string;
   manufacturingProcessCode: string;
   issuedDate: string;

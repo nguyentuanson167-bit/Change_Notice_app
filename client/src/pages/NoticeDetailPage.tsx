@@ -3,6 +3,11 @@ import { api } from "../api";
 import type { NavState } from "../App";
 import type { Attachment, ChangeNotice, User } from "../types";
 
+const workshopLabels = {
+  STERILE: "Xưởng vô trùng",
+  NON_STERILE: "Xưởng không vô trùng"
+} as const;
+
 export function NoticeDetailPage({ id, user, navigate }: { id: string; user: User; navigate: (nav: NavState) => void }) {
   const [notice, setNotice] = useState<ChangeNotice | null>(null);
   const [returnReason, setReturnReason] = useState("");
@@ -121,6 +126,7 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
           <h2>Thông tin chung</h2>
           <Info label="Trạng thái" value={notice.status} />
           <Info label="Người đề nghị" value={`${notice.proposerName} - ${notice.proposerDepartment}`} />
+          <Info label="Loại xưởng" value={workshopLabels[notice.workshopType]} />
           <Info label="Sản phẩm" value={notice.productName} />
           <Info label="Mã quy trình" value={notice.manufacturingProcessCode} />
           <Info label="Lần ban hành" value={notice.notificationIssueNumber} />

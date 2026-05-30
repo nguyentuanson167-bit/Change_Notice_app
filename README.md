@@ -20,9 +20,11 @@ All demo accounts use password `password123`.
 
 | Username | Role |
 | --- | --- |
-| author | Author / NCPT |
-| author2 | Author / NCPT |
-| lead | NCPT Lead |
+| author | Author / NCPT xưởng không vô trùng |
+| author2 | Author / NCPT xưởng vô trùng |
+| lead | Tổ trưởng NCPT xưởng không vô trùng |
+| lead-sterile | Tổ trưởng NCPT xưởng vô trùng |
+| ncpt-head | Trưởng phòng NCPT, duyệt được cả hai xưởng |
 | qa-deputy | QA Deputy |
 | qa-head | QA Head |
 | director | Production Director |

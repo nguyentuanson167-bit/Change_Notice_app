@@ -23,7 +23,7 @@ printingRouter.get("/notices/:id/print-data", async (req, res) => {
 
   const signatures = {
     editedBy: notice.workflowSteps.find((step) => step.requiredRole === "AUTHOR"),
-    reviewedBy: notice.workflowSteps.find((step) => step.requiredRole === "NCPT_LEAD"),
+    reviewedBy: notice.workflowSteps.find((step) => ["NCPT_LEAD", "NCPT_LEAD_STERILE", "NCPT_LEAD_NON_STERILE", "NCPT_HEAD"].includes(step.requiredRole)),
     qaDeputyBy: notice.workflowSteps.find((step) => step.requiredRole === "QA_DEPUTY"),
     appraisedBy: notice.workflowSteps.find((step) => step.requiredRole === "QA_HEAD"),
     approvedBy: notice.workflowSteps.find((step) => step.requiredRole === "PROD_DIRECTOR")

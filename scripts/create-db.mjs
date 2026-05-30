@@ -17,6 +17,7 @@ CREATE TABLE User (
   email TEXT NOT NULL UNIQUE,
   passwordHash TEXT NOT NULL,
   department TEXT NOT NULL,
+  workshopType TEXT NOT NULL DEFAULT 'ALL',
   active BOOLEAN NOT NULL DEFAULT 1,
   createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -44,6 +45,7 @@ CREATE TABLE ChangeNotification (
   recipient TEXT NOT NULL,
   proposerName TEXT NOT NULL,
   proposerDepartment TEXT NOT NULL,
+  workshopType TEXT NOT NULL,
   productName TEXT NOT NULL,
   manufacturingProcessCode TEXT NOT NULL,
   issuedDate DATETIME NOT NULL,

@@ -13,10 +13,24 @@ const views = [
   ["open-annotations", "Có ghi chú mở"]
 ];
 
-export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState) => void; defaultView?: string }) {
+const workshopLabels = {
+  STERILE: "xưởng vô trùng",
+  NON_STERILE: "xưởng không vô trùng"
+} as const;
+
+export function BrowsePage({
+  navigate,
+  defaultView,
+  defaultWorkshopType
+}: {
+  navigate: (nav: NavState) => void;
+  defaultView?: string;
+  defaultWorkshopType?: "STERILE" | "NON_STERILE";
+}) {
   const [view, setView] = useState(defaultView || "");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  const [workshopType, setWorkshopType] = useState<"" | "STERILE" | "NON_STERILE">(defaultWorkshopType || "");
   const [notices, setNotices] = useState<ChangeNotice[]>([]);
   const [error, setError] = useState("");
 
@@ -25,17 +39,22 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
     if (view) params.set("view", view);
     if (q) params.set("q", q);
     if (status) params.set("status", status);
+    if (workshopType) params.set("workshopType", workshopType);
     api<{ notices: ChangeNotice[] }>(`/api/notices?${params}`)
       .then((res) => setNotices(res.notices))
       .catch((err) => setError(err.message));
-  }, [view, q, status]);
+  }, [view, q, status, workshopType]);
+
+  useEffect(() => {
+    setWorkshopType(defaultWorkshopType || "");
+  }, [defaultWorkshopType]);
 
   return (
     <div>
       <div className="page-title">
         <div>
-          <h1>Tra cứu TBTĐ</h1>
-          <p>Tìm và thao tác nhanh với thông báo đang thực hiện và đã phê duyệt.</p>
+          <h1>{workshopType ? `Tra cứu TBTĐ ${workshopLabels[workshopType]}` : "Tra cứu TBTĐ"}</h1>
+          <p>Tìm và thao tác nhanh với thông báo đang thực hiện và đã phê duyệt theo từng xưởng.</p>
         </div>
         <button onClick={() => navigate({ page: "create" })}>Tạo mới</button>
       </div>
@@ -59,7 +78,12 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
           <option value="DISTRIBUTED">Đã phân phối</option>
           <option value="SUPERSEDED">Đã thay thế</option>
         </select>
-        <button onClick={() => { setQ(""); setStatus(""); setView(""); }}>Xóa lọc</button>
+        <select value={workshopType} onChange={(event) => setWorkshopType(event.target.value as "" | "STERILE" | "NON_STERILE")}>
+          <option value="">Cả hai xưởng</option>
+          <option value="STERILE">Xưởng vô trùng</option>
+          <option value="NON_STERILE">Xưởng không vô trùng</option>
+        </select>
+        <button onClick={() => { setQ(""); setStatus(""); setView(""); setWorkshopType(defaultWorkshopType || ""); }}>Xóa lọc</button>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="table-wrap">
@@ -69,6 +93,7 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
               <th>Mã</th>
               <th>Tiêu đề</th>
               <th>Sản phẩm / Mã quy trình</th>
+              <th>Loại xưởng</th>
               <th>Trạng thái</th>
               <th>Người đề nghị</th>
               <th>Ghi chú mở</th>
@@ -82,6 +107,7 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
                 <td>{notice.code}</td>
                 <td>{notice.title}</td>
                 <td>{notice.productName}<br /><small>{notice.manufacturingProcessCode}</small></td>
+                <td>{workshopLabels[notice.workshopType]}</td>
                 <td><span className={`badge ${notice.status.toLowerCase()}`}>{notice.status}</span></td>
                 <td>{notice.proposerName}<br /><small>{notice.proposerDepartment}</small></td>
                 <td>{notice.annotations.filter((item) => item.status === "OPEN").length}</td>

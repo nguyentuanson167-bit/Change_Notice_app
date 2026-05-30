@@ -32,6 +32,7 @@ export function serializeUser(user: NonNullable<AuthedUser>) {
     name: user.name,
     email: user.email,
     department: user.department,
+    workshopType: user.workshopType,
     active: user.active,
     roles: user.roles.map((item) => item.role.code)
   };

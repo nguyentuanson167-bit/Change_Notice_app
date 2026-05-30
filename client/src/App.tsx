@@ -16,6 +16,7 @@ export type NavState = {
   page: Page;
   id?: string;
   view?: string;
+  workshopType?: "STERILE" | "NON_STERILE";
 };
 
 export function App() {
@@ -38,8 +39,8 @@ export function App() {
   return (
     <Layout user={user} nav={nav} navigate={navigate} onLogout={() => setUser(null)}>
       {nav.page === "dashboard" && <DashboardPage navigate={navigate} />}
-      {nav.page === "browse" && <BrowsePage navigate={navigate} defaultView={nav.view} />}
-      {nav.page === "create" && <NoticeFormPage id={nav.id} navigate={navigate} />}
+      {nav.page === "browse" && <BrowsePage navigate={navigate} defaultView={nav.view} defaultWorkshopType={nav.workshopType} />}
+      {nav.page === "create" && <NoticeFormPage id={nav.id} user={user} navigate={navigate} />}
       {nav.page === "detail" && nav.id && <NoticeDetailPage id={nav.id} user={user} navigate={navigate} />}
       {nav.page === "print" && nav.id && <PrintNoticePage id={nav.id} navigate={navigate} />}
       {nav.page === "admin-users" && <AdminUsersPage />}

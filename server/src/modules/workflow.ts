@@ -1,7 +1,7 @@
 export const workflowOrder = [
   {
     pendingStatus: "PENDING_NCPT_LEAD",
-    requiredRole: "NCPT_LEAD",
+    requiredRole: "NCPT_LEAD_NON_STERILE",
     signatureMeaning: "Đã kiểm tra và xác nhận"
   },
   {
@@ -21,11 +21,28 @@ export const workflowOrder = [
   }
 ] as const;
 
-export const distributionUnits = [
+export const workshopLabels: Record<string, string> = {
+  STERILE: "Xưởng vô trùng",
+  NON_STERILE: "Xưởng không vô trùng",
+  ALL: "Tất cả xưởng"
+};
+
+export function normalizeWorkshopType(value: unknown, fallback = "NON_STERILE") {
+  return value === "STERILE" || value === "NON_STERILE" ? value : fallback;
+}
+
+export function getNcptLeadRole(workshopType: string) {
+  return normalizeWorkshopType(workshopType) === "STERILE" ? "NCPT_LEAD_STERILE" : "NCPT_LEAD_NON_STERILE";
+}
+
+export function getDistributionUnits(workshopType: string) {
+  const workshopLabel = workshopLabels[normalizeWorkshopType(workshopType)] ?? workshopLabels.NON_STERILE;
+  return [
   { receivingUnit: "Phòng NCPT / R&D", versionLabel: "Bản gốc / Original" },
   { receivingUnit: "Phòng ĐBCL / QA", versionLabel: "Bản copy / Copy" },
-  { receivingUnit: "Xưởng sản xuất / Factory", versionLabel: "Bản copy / Copy" }
-];
+    { receivingUnit: `${workshopLabel} / Factory`, versionLabel: "Bản copy / Copy" }
+  ];
+}
 
 export const activeStatuses = [
   "DRAFT",
@@ -37,8 +54,14 @@ export const activeStatuses = [
   "PENDING_PROD_DIRECTOR"
 ];
 
-export function getWorkflowStep(status: string) {
-  return workflowOrder.find((step) => step.pendingStatus === status);
+export function getWorkflowStep(status: string, workshopType = "NON_STERILE") {
+  const step = workflowOrder.find((item) => item.pendingStatus === status);
+  if (!step) return undefined;
+  if (status !== "PENDING_NCPT_LEAD") return step;
+  return {
+    ...step,
+    requiredRole: getNcptLeadRole(workshopType)
+  };
 }
 
 export function getNextStatus(currentStatus: string): string | undefined {
@@ -47,7 +70,28 @@ export function getNextStatus(currentStatus: string): string | undefined {
   return workflowOrder[index + 1]?.pendingStatus ?? "APPROVED";
 }
 
-export function canRoleAct(status: string, roles: string[]) {
-  const step = getWorkflowStep(status);
-  return Boolean(step && roles.includes(step.requiredRole));
+export function pendingStatusesForRoles(roles: string[]) {
+  const statuses = workflowOrder
+    .filter((step) => roles.includes(step.requiredRole))
+    .map((step) => step.pendingStatus);
+  if (roles.includes("NCPT_HEAD") || roles.includes("NCPT_LEAD_STERILE") || roles.includes("NCPT_LEAD_NON_STERILE") || roles.includes("NCPT_LEAD")) {
+    statuses.push("PENDING_NCPT_LEAD");
+  }
+  return [...new Set(statuses)];
+}
+
+export function canRoleAct(status: string, roles: string[], workshopType = "NON_STERILE") {
+  const step = getWorkflowStep(status, workshopType);
+  if (!step) return false;
+  if (status === "PENDING_NCPT_LEAD" && roles.includes("NCPT_HEAD")) return true;
+  return roles.includes(step.requiredRole) || (status === "PENDING_NCPT_LEAD" && roles.includes("NCPT_LEAD"));
+}
+
+export function getActingRole(status: string, roles: string[], workshopType = "NON_STERILE") {
+  const step = getWorkflowStep(status, workshopType);
+  if (!step) return undefined;
+  if (status === "PENDING_NCPT_LEAD" && roles.includes("NCPT_HEAD")) return "NCPT_HEAD";
+  if (roles.includes(step.requiredRole)) return step.requiredRole;
+  if (status === "PENDING_NCPT_LEAD" && roles.includes("NCPT_LEAD")) return "NCPT_LEAD";
+  return undefined;
 }

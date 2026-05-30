@@ -70,4 +70,36 @@ describe("workflow", () => {
     expect(approved.body.notice.status).toBe("DISTRIBUTED");
     expect(approved.body.notice.distributions.length).toBeGreaterThanOrEqual(3);
   });
+
+  it("scopes NCPT lead signing by workshop and allows NCPT head substitute", async () => {
+    const sterileAuthor = await login("author2");
+    const createSterile = await sterileAuthor.post("/api/notices").send({
+      ...noticePayload(`sterile-${Date.now()}`),
+      workshopType: "STERILE"
+    });
+    const sterileId = createSterile.body.notice.id;
+    await sterileAuthor.post(`/api/notices/${sterileId}/submit`).send();
+
+    const nonSterileLead = await login("lead");
+    const wrongLead = await nonSterileLead.post(`/api/notices/${sterileId}/sign`).send();
+    expect(wrongLead.status).toBe(403);
+
+    const sterileLead = await login("lead-sterile");
+    const sterileSigned = await sterileLead.post(`/api/notices/${sterileId}/sign`).send();
+    expect(sterileSigned.status).toBe(200);
+    expect(sterileSigned.body.notice.status).toBe("PENDING_QA_DEPUTY");
+
+    const nonSterileAuthor = await login("author");
+    const createNonSterile = await nonSterileAuthor.post("/api/notices").send({
+      ...noticePayload(`head-${Date.now()}`),
+      workshopType: "NON_STERILE"
+    });
+    const nonSterileId = createNonSterile.body.notice.id;
+    await nonSterileAuthor.post(`/api/notices/${nonSterileId}/submit`).send();
+
+    const ncptHead = await login("ncpt-head");
+    const headSigned = await ncptHead.post(`/api/notices/${nonSterileId}/sign`).send();
+    expect(headSigned.status).toBe(200);
+    expect(headSigned.body.notice.status).toBe("PENDING_QA_DEPUTY");
+  });
 });

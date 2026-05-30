@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { NavState } from "../App";
-import type { Attachment, ChangeNotice } from "../types";
+import type { Attachment, ChangeNotice, User } from "../types";
 
 const initial = {
   recipient: "Ban Giám đốc sản xuất",
   proposerName: "",
   proposerDepartment: "Phòng NCPT / R&D",
+  workshopType: "NON_STERILE",
   productName: "",
   manufacturingProcessCode: "",
   issuedDate: new Date().toISOString().slice(0, 10),
@@ -20,7 +21,7 @@ const initial = {
 
 type FormState = typeof initial;
 
-export function NoticeFormPage({ id, navigate }: { id?: string; navigate: (nav: NavState) => void }) {
+export function NoticeFormPage({ id, user, navigate }: { id?: string; user: User; navigate: (nav: NavState) => void }) {
   const [form, setForm] = useState(initial);
   const [notice, setNotice] = useState<ChangeNotice | null>(null);
   const [files, setFiles] = useState<Attachment[]>([]);
@@ -37,6 +38,7 @@ export function NoticeFormPage({ id, navigate }: { id?: string; navigate: (nav: 
           recipient: res.notice.recipient,
           proposerName: res.notice.proposerName,
           proposerDepartment: res.notice.proposerDepartment,
+          workshopType: res.notice.workshopType,
           productName: res.notice.productName,
           manufacturingProcessCode: res.notice.manufacturingProcessCode,
           issuedDate: res.notice.issuedDate.slice(0, 10),
@@ -50,6 +52,13 @@ export function NoticeFormPage({ id, navigate }: { id?: string; navigate: (nav: 
       })
       .catch((err) => setError(err.message));
   }, [id]);
+
+  useEffect(() => {
+    if (id) return;
+    if (user.workshopType === "STERILE" || user.workshopType === "NON_STERILE") {
+      setForm((current) => ({ ...current, workshopType: user.workshopType }));
+    }
+  }, [id, user.workshopType]);
 
   function update(name: keyof FormState, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -110,7 +119,12 @@ export function NoticeFormPage({ id, navigate }: { id?: string; navigate: (nav: 
         {Object.entries(form).map(([key, value]) => (
           <label key={key} className={key === "changeContent" || key === "effectiveNote" ? "wide" : ""}>
             {labelFor(key)}
-            {key === "changeContent" || key === "effectiveNote" ? (
+            {key === "workshopType" ? (
+              <select value={value} disabled={user.workshopType !== "ALL"} onChange={(event) => update(key as keyof FormState, event.target.value)}>
+                <option value="STERILE">Xưởng vô trùng</option>
+                <option value="NON_STERILE">Xưởng không vô trùng</option>
+              </select>
+            ) : key === "changeContent" || key === "effectiveNote" ? (
               <textarea value={value} onChange={(event) => update(key as keyof FormState, event.target.value)} rows={5} />
             ) : (
               <input type={key === "issuedDate" ? "date" : "text"} value={value} onChange={(event) => update(key as keyof FormState, event.target.value)} />
@@ -146,6 +160,7 @@ function labelFor(key: string) {
     recipient: "Kính gửi / To",
     proposerName: "Người đề nghị / Proponent",
     proposerDepartment: "Bộ phận / Dept",
+    workshopType: "Loại xưởng",
     productName: "Tên sản phẩm / Product name",
     manufacturingProcessCode: "Mã quy trình / Manufacturing process code",
     issuedDate: "Ngày ban hành / Issued date",

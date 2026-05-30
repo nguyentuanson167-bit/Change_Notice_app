@@ -75,6 +75,28 @@ The frontend owns UI state and navigation. The backend owns all workflow transit
 - My Queue page for items awaiting the current user's signature.
 - Admin/demo data page for users, roles, departments, workflow template, and simulated backup jobs.
 
+## Workshop Scope
+
+Each TBTD belongs to exactly one production workshop scope:
+
+- `STERILE`: Xưởng vô trùng.
+- `NON_STERILE`: Xưởng không vô trùng.
+
+Browse has two explicit entry points:
+
+- `Tra cứu TBTĐ xưởng vô trùng`.
+- `Tra cứu TBTĐ xưởng không vô trùng`.
+
+The general browse page can still show both scopes when no workshop filter is selected.
+
+NCPT responsibility is scoped by workshop:
+
+- NCPT authors assigned to `STERILE` can create and deploy TBTĐ records for xưởng vô trùng only.
+- NCPT authors assigned to `NON_STERILE` can create and deploy TBTĐ records for xưởng không vô trùng only.
+- `NCPT_LEAD_STERILE` can approve the NCPT review step for sterile-workshop TBTĐ records only.
+- `NCPT_LEAD_NON_STERILE` can approve the NCPT review step for non-sterile-workshop TBTĐ records only.
+- `NCPT_HEAD` can approve the NCPT review step for either workshop as a substitute for the relevant team lead.
+
 ## Browsing And Retrieval
 
 Browsing existing Change Notices is a first-class workflow. The MVP provides one main `Tra cuu TBTD / Browse Change Notices` screen that lets users reach both already executed notices and in-progress notices without knowing the exact code.
@@ -124,7 +146,9 @@ Main entities:
 
 - `User`: username, name, email, password hash for demo auth, department, active status.
 - `Role` and `UserRole`: many-to-many role assignment so one user can hold multiple responsibilities.
+- `User.workshopType`: `STERILE`, `NON_STERILE`, or `ALL` for cross-workshop/admin roles.
 - `ChangeNotification`: TBTD code, title, recipient/dear-to text, proposer name, proposer department, product name, manufacturing process code, issued date, notification issuance number, change type, impact level, change content/reason, effective note, status, author, revision number, original reference, created/updated timestamps.
+- `ChangeNotification.workshopType`: required workshop scope for browse filtering and NCPT approval routing.
 - `Attachment`: file name, MIME type, category, size, checksum, local path, version.
 - `WorkflowStep`: TBTD, sequence, required role, action, signer, signature meaning, return reason, timestamp.
 - `Annotation`: general comment or file-position note, page/coordinate/reference text, severity, status, creator, resolver.

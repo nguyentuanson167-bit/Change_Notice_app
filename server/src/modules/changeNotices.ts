@@ -3,7 +3,17 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { currentUser, requireAuth } from "./auth.js";
 import { writeAudit } from "./audit.js";
-import { activeStatuses, canRoleAct, distributionUnits, getNextStatus, getWorkflowStep } from "./workflow.js";
+import {
+  activeStatuses,
+  canRoleAct,
+  getActingRole,
+  getDistributionUnits,
+  getNcptLeadRole,
+  getNextStatus,
+  getWorkflowStep,
+  normalizeWorkshopType,
+  pendingStatusesForRoles
+} from "./workflow.js";
 
 export const changeNoticeRouter = Router();
 
@@ -12,6 +22,7 @@ const noticeSchema = z.object({
   recipient: z.string().min(1),
   proposerName: z.string().min(1),
   proposerDepartment: z.string().min(1),
+  workshopType: z.enum(["STERILE", "NON_STERILE"]).optional(),
   productName: z.string().min(1),
   manufacturingProcessCode: z.string().min(1),
   issuedDate: z.string().min(1),
@@ -41,35 +52,50 @@ async function nextCode() {
   return `TBTD-NCPT-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
+function canCreateForWorkshop(user: ReturnType<typeof currentUser>, workshopType: string) {
+  if (user.roles.includes("ADMIN")) return true;
+  if (!user.roles.includes("AUTHOR")) return false;
+  return user.workshopType === workshopType;
+}
+
+function queueWhere(user: ReturnType<typeof currentUser>) {
+  const scopedNcpt = [];
+  if (user.roles.includes("NCPT_HEAD")) scopedNcpt.push({ status: "PENDING_NCPT_LEAD" });
+  if (user.roles.includes("NCPT_LEAD_STERILE")) scopedNcpt.push({ status: "PENDING_NCPT_LEAD", workshopType: "STERILE" });
+  if (user.roles.includes("NCPT_LEAD_NON_STERILE")) scopedNcpt.push({ status: "PENDING_NCPT_LEAD", workshopType: "NON_STERILE" });
+  if (user.roles.includes("NCPT_LEAD") && user.workshopType !== "ALL") {
+    scopedNcpt.push({ status: "PENDING_NCPT_LEAD", workshopType: normalizeWorkshopType(user.workshopType) });
+  }
+
+  const nonNcptPending = pendingStatusesForRoles(user.roles).filter((status) => status !== "PENDING_NCPT_LEAD");
+  const assigneeRoles = user.roles.filter((role) => !["NCPT_HEAD", "NCPT_LEAD_STERILE", "NCPT_LEAD_NON_STERILE", "NCPT_LEAD"].includes(role));
+  const OR = [
+    ...scopedNcpt,
+    ...(assigneeRoles.length ? [{ currentAssigneeRole: { in: assigneeRoles } }] : []),
+    ...(nonNcptPending.length ? [{ status: { in: nonNcptPending } }] : [])
+  ];
+  return OR.length ? { OR } : {};
+}
+
 function accessWhere(user: ReturnType<typeof currentUser>) {
   if (user.roles.includes("ADMIN")) return {};
-  const roleStatuses = user.roles
-    .map((role) => getWorkflowStepForRole(role)?.pendingStatus)
-    .filter((status): status is string => Boolean(status));
+  const queue = queueWhere(user);
   return {
     OR: [
       { authorId: user.id },
-      { currentAssigneeRole: { in: user.roles } },
+      ...("OR" in queue ? [queue] : []),
       { status: { in: ["APPROVED", "DISTRIBUTED"] } },
       { workflowSteps: { some: { signerId: user.id } } },
-      { distributions: { some: { receivingUnit: user.department } } },
-      ...(roleStatuses.length ? [{ status: { in: roleStatuses } }] : [])
+      { distributions: { some: { receivingUnit: user.department } } }
     ]
   };
 }
 
-function getWorkflowStepForRole(role: string) {
-  return [
-    ["NCPT_LEAD", "PENDING_NCPT_LEAD"],
-    ["QA_DEPUTY", "PENDING_QA_DEPUTY"],
-    ["QA_HEAD", "PENDING_QA_HEAD"],
-    ["PROD_DIRECTOR", "PENDING_PROD_DIRECTOR"]
-  ].map(([requiredRole, pendingStatus]) => ({ requiredRole, pendingStatus })).find((item) => item.requiredRole === role);
-}
-
 function viewWhere(view?: string, user?: ReturnType<typeof currentUser>) {
   if (view === "in-progress") return { status: { in: activeStatuses } };
-  if (view === "my-queue" && user) return { currentAssigneeRole: { in: user.roles } };
+  if (view === "my-queue" && user) {
+    return queueWhere(user);
+  }
   if (view === "approved") return { status: { in: ["APPROVED", "DISTRIBUTED"] } };
   if (view === "distributed" && user) return { distributions: { some: { receivingUnit: user.department } } };
   if (view === "superseded") return { status: "SUPERSEDED" };
@@ -91,6 +117,7 @@ changeNoticeRouter.get("/", async (req, res) => {
       req.query.changeType ? { changeType: String(req.query.changeType) } : {},
       req.query.impactLevel ? { impactLevel: String(req.query.impactLevel) } : {},
       req.query.department ? { proposerDepartment: { contains: String(req.query.department) } } : {},
+      req.query.workshopType ? { workshopType: normalizeWorkshopType(String(req.query.workshopType)) } : {},
       q
         ? {
             OR: [
@@ -137,9 +164,15 @@ changeNoticeRouter.post("/", async (req, res) => {
     res.status(403).json({ message: "Chỉ người soạn hoặc admin được tạo TBTĐ." });
     return;
   }
+  const workshopType = normalizeWorkshopType(parsed.data.workshopType, user.workshopType === "STERILE" ? "STERILE" : "NON_STERILE");
+  if (!canCreateForWorkshop(user, workshopType)) {
+    res.status(403).json({ message: "Nhân viên NCPT chỉ được tạo TBTĐ cho xưởng mình phụ trách." });
+    return;
+  }
   const notice = await prisma.changeNotification.create({
     data: {
       ...parsed.data,
+      workshopType,
       code: await nextCode(),
       issuedDate: new Date(parsed.data.issuedDate),
       effectiveNote:
@@ -173,6 +206,10 @@ changeNoticeRouter.put("/:id", async (req, res) => {
     res.status(403).json({ message: "Bạn chỉ được sửa TBTĐ của mình." });
     return;
   }
+  if (parsed.data.workshopType && !canCreateForWorkshop(user, parsed.data.workshopType)) {
+    res.status(403).json({ message: "Bạn không được chuyển TBTĐ sang xưởng ngoài phạm vi phụ trách." });
+    return;
+  }
   const notice = await prisma.changeNotification.update({
     where: { id: req.params.id },
     data: {
@@ -202,7 +239,7 @@ changeNoticeRouter.post("/:id/submit", async (req, res) => {
   }
   const notice = await prisma.changeNotification.update({
     where: { id: before.id },
-    data: { status: "PENDING_NCPT_LEAD", currentAssigneeRole: "NCPT_LEAD" },
+    data: { status: "PENDING_NCPT_LEAD", currentAssigneeRole: getNcptLeadRole(before.workshopType) },
     include: includeNotice()
   });
   await prisma.workflowStep.create({
@@ -226,11 +263,12 @@ changeNoticeRouter.post("/:id/sign", async (req, res) => {
     res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
-  if (!canRoleAct(before.status, user.roles)) {
+  if (!canRoleAct(before.status, user.roles, before.workshopType)) {
     res.status(403).json({ message: "TBTĐ này không chờ vai trò của bạn ký." });
     return;
   }
-  const step = getWorkflowStep(before.status)!;
+  const step = getWorkflowStep(before.status, before.workshopType)!;
+  const actingRole = getActingRole(before.status, user.roles, before.workshopType) ?? step.requiredRole;
   const nextStatus = getNextStatus(before.status)!;
   const finalApproval = nextStatus === "APPROVED";
   const notice = await prisma.$transaction(async (tx) => {
@@ -238,7 +276,7 @@ changeNoticeRouter.post("/:id/sign", async (req, res) => {
       data: {
         noticeId: before.id,
         sequence: before.workflowSteps.length + 1,
-        requiredRole: step.requiredRole,
+        requiredRole: actingRole,
         action: finalApproval ? "APPROVED" : "SIGNED",
         signerId: user.id,
         signatureMeaning: step.signatureMeaning
@@ -248,11 +286,11 @@ changeNoticeRouter.post("/:id/sign", async (req, res) => {
       where: { id: before.id },
       data: {
         status: finalApproval ? "DISTRIBUTED" : nextStatus,
-        currentAssigneeRole: finalApproval ? null : getWorkflowStep(nextStatus)?.requiredRole
+        currentAssigneeRole: finalApproval ? null : getWorkflowStep(nextStatus, before.workshopType)?.requiredRole
       }
     });
     if (finalApproval) {
-      for (const unit of distributionUnits) {
+      for (const unit of getDistributionUnits(before.workshopType)) {
         await tx.distribution.create({
           data: { noticeId: before.id, receivingUnit: unit.receivingUnit, versionLabel: unit.versionLabel }
         });
@@ -270,7 +308,7 @@ changeNoticeRouter.post("/:id/sign", async (req, res) => {
 changeNoticeRouter.post("/:id/return", async (req, res) => {
   const reason = String(req.body?.reason || "").trim();
   if (!reason) {
-    res.status(400).json({ message: "Ly do tra ve la bat buoc." });
+    res.status(400).json({ message: "Lý do trả về là bắt buộc." });
     return;
   }
   const user = currentUser(res);
@@ -279,11 +317,12 @@ changeNoticeRouter.post("/:id/return", async (req, res) => {
     res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
-  if (!canRoleAct(before.status, user.roles)) {
+  if (!canRoleAct(before.status, user.roles, before.workshopType)) {
     res.status(403).json({ message: "Bạn không phụ trách bước ký hiện tại." });
     return;
   }
-  const step = getWorkflowStep(before.status)!;
+  const step = getWorkflowStep(before.status, before.workshopType)!;
+  const actingRole = getActingRole(before.status, user.roles, before.workshopType) ?? step.requiredRole;
   const notice = await prisma.changeNotification.update({
     where: { id: before.id },
     data: { status: "RETURNED", currentAssigneeRole: null },
@@ -293,7 +332,7 @@ changeNoticeRouter.post("/:id/return", async (req, res) => {
     data: {
       noticeId: notice.id,
       sequence: before.workflowSteps.length + 1,
-      requiredRole: step.requiredRole,
+      requiredRole: actingRole,
       action: "RETURNED",
       signerId: user.id,
       signatureMeaning: "Trả về để chỉnh sửa",
@@ -353,6 +392,7 @@ changeNoticeRouter.post("/:id/revision", async (req, res) => {
         recipient: original.recipient,
         proposerName: user.name,
         proposerDepartment: user.department,
+        workshopType: original.workshopType,
         productName: original.productName,
         manufacturingProcessCode: original.manufacturingProcessCode,
         issuedDate: new Date(),
