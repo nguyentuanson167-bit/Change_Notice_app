@@ -3,9 +3,11 @@ import { api } from "../api";
 import type { User } from "../types";
 
 const accounts = [
-  ["author", "Nhân viên NCPT"],
-  ["author2", "Nhân viên NCPT 2"],
-  ["lead", "Trưởng nhóm NCPT"],
+  ["author", "Nhân viên nghiên cứu không vô trùng"],
+  ["author2", "Nhân viên nghiên cứu vô trùng"],
+  ["lead", "Tổ trưởng tổ nghiên cứu không vô trùng"],
+  ["lead-sterile", "Tổ trưởng tổ nghiên cứu vô trùng"],
+  ["ncpt-head", "Trưởng phòng NCPT"],
   ["qa-deputy", "Phó phòng ĐBCL"],
   ["qa-head", "Trưởng phòng ĐBCL"],
   ["director", "Giám đốc sản xuất"],

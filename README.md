@@ -22,8 +22,8 @@ All demo accounts use password `password123`.
 | --- | --- |
 | author | Nhân viên nghiên cứu không vô trùng |
 | author2 | Nhân viên nghiên cứu vô trùng |
-| lead | Tổ trưởng NCPT xưởng không vô trùng |
-| lead-sterile | Tổ trưởng NCPT xưởng vô trùng |
+| lead | Tổ trưởng tổ nghiên cứu không vô trùng |
+| lead-sterile | Tổ trưởng tổ nghiên cứu vô trùng |
 | ncpt-head | Trưởng phòng NCPT, duyệt được cả hai xưởng |
 | qa-deputy | QA Deputy |
 | qa-head | QA Head |

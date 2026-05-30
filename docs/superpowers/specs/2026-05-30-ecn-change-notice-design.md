@@ -93,8 +93,8 @@ NCPT responsibility is scoped by workshop:
 
 - `AUTHOR_STERILE` / nhân viên nghiên cứu vô trùng can create, edit, submit, and attach documents only for `STERILE` TBTĐ records.
 - `AUTHOR_NON_STERILE` / nhân viên nghiên cứu không vô trùng can create, edit, submit, and attach documents only for `NON_STERILE` TBTĐ records.
-- `NCPT_LEAD_STERILE` can approve the NCPT review step for sterile-workshop TBTĐ records only.
-- `NCPT_LEAD_NON_STERILE` can approve the NCPT review step for non-sterile-workshop TBTĐ records only.
+- `NCPT_LEAD_STERILE` / tổ trưởng tổ nghiên cứu vô trùng can sign/approve or return the NCPT review step for `STERILE` TBTĐ records only.
+- `NCPT_LEAD_NON_STERILE` / tổ trưởng tổ nghiên cứu không vô trùng can sign/approve or return the NCPT review step for `NON_STERILE` TBTĐ records only.
 - `NCPT_HEAD` can approve the NCPT review step for either workshop as a substitute for the relevant team lead.
 
 ## Browsing And Retrieval

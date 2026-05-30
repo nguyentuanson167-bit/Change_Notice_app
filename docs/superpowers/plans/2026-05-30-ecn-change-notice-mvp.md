@@ -1239,7 +1239,8 @@ The following fixes were added after initial MVP implementation:
   - Split browse entry points into `Tra cứu TBTĐ xưởng vô trùng` and `Tra cứu TBTĐ xưởng không vô trùng`.
   - Split research staff roles into `AUTHOR_STERILE` and `AUTHOR_NON_STERILE`.
   - Restrict research staff to creating, editing, submitting, and attaching documents only for their assigned dosage/workshop scope.
-  - Replace generic NCPT lead approval with scoped roles: `NCPT_LEAD_STERILE`, `NCPT_LEAD_NON_STERILE`.
+  - Replace generic NCPT lead approval with scoped roles: `NCPT_LEAD_STERILE` / tổ trưởng tổ nghiên cứu vô trùng and `NCPT_LEAD_NON_STERILE` / tổ trưởng tổ nghiên cứu không vô trùng.
+  - Restrict team leads to signing/returning only the TBTĐ records in their assigned workshop scope.
   - Allow `NCPT_HEAD` to approve the NCPT step for either workshop in place of the team lead.
   - Add workflow tests for wrong-workshop lead rejection and NCPT head substitution.
 - Verification for this follow-up:

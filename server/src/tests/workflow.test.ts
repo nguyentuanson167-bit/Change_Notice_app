@@ -103,6 +103,25 @@ describe("workflow", () => {
     expect(headSigned.body.notice.status).toBe("PENDING_QA_DEPUTY");
   });
 
+  it("scopes NCPT lead return action by workshop", async () => {
+    const sterileAuthor = await login("author2");
+    const createSterile = await sterileAuthor.post("/api/notices").send({
+      ...noticePayload(`sterile-return-${Date.now()}`),
+      workshopType: "STERILE"
+    });
+    const sterileId = createSterile.body.notice.id;
+    await sterileAuthor.post(`/api/notices/${sterileId}/submit`).send();
+
+    const nonSterileLead = await login("lead");
+    const wrongReturn = await nonSterileLead.post(`/api/notices/${sterileId}/return`).send({ reason: "Sai phạm vi xưởng" });
+    expect(wrongReturn.status).toBe(403);
+
+    const sterileLead = await login("lead-sterile");
+    const returned = await sterileLead.post(`/api/notices/${sterileId}/return`).send({ reason: "Cần bổ sung nội dung thay đổi" });
+    expect(returned.status).toBe(200);
+    expect(returned.body.notice.status).toBe("RETURNED");
+  });
+
   it("scopes research staff create edit and submit by dosage workshop", async () => {
     const nonSterileAuthor = await login("author");
     const wrongCreate = await nonSterileAuthor.post("/api/notices").send({

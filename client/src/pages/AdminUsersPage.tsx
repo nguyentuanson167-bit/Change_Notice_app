@@ -84,7 +84,7 @@ export function AdminUsersPage() {
                   }));
                 }}
               />
-              {role.code}
+              {role.name}
             </label>
           ))}
         </div>
@@ -110,7 +110,7 @@ export function AdminUsersPage() {
                 <td>{user.name}</td>
                 <td>{user.department}</td>
                 <td>{workshopLabels[user.workshopType]}</td>
-                <td>{user.roles.map((item) => item.role.code).join(", ")}</td>
+                <td>{user.roles.map((item) => item.role.name).join(", ")}</td>
                 <td>{user.active ? "Đang hoạt động" : "Đã vô hiệu"}</td>
                 <td><button onClick={() => toggleActive(user)}>{user.active ? "Vô hiệu" : "Kích hoạt"}</button></td>
               </tr>

@@ -5,8 +5,8 @@ import { DEMO_PASSWORD } from "../server/src/seedPasswords";
 const roles = [
   ["AUTHOR_STERILE", "Nhân viên nghiên cứu vô trùng"],
   ["AUTHOR_NON_STERILE", "Nhân viên nghiên cứu không vô trùng"],
-  ["NCPT_LEAD_NON_STERILE", "Tổ trưởng NCPT xưởng không vô trùng"],
-  ["NCPT_LEAD_STERILE", "Tổ trưởng NCPT xưởng vô trùng"],
+  ["NCPT_LEAD_NON_STERILE", "Tổ trưởng tổ nghiên cứu không vô trùng"],
+  ["NCPT_LEAD_STERILE", "Tổ trưởng tổ nghiên cứu vô trùng"],
   ["NCPT_HEAD", "Trưởng phòng NCPT"],
   ["QA_DEPUTY", "Phó phòng ĐBCL"],
   ["QA_HEAD", "Trưởng phòng ĐBCL"],
