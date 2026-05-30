@@ -46,16 +46,16 @@ export function AdminUsersPage() {
     <div>
       <div className="page-title">
         <div>
-          <h1>Quan ly tai khoan</h1>
-          <p>Quan ly da tai khoan, phong ban va vai tro ky duyet.</p>
+          <h1>Quản lý tài khoản</h1>
+          <p>Quản lý đa tài khoản, phòng ban và vai trò ký duyệt.</p>
         </div>
       </div>
       {error && <div className="error">{error}</div>}
       <form className="form-grid panel" onSubmit={create}>
         <label>Username<input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></label>
-        <label>Ho ten<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+        <label>Họ tên<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
         <label>Email<input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-        <label>Phong ban<input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></label>
+        <label>Phòng ban<input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></label>
         <div className="wide checkbox-row">
           {roles.map((role) => (
             <label key={role.id}>
@@ -73,17 +73,17 @@ export function AdminUsersPage() {
             </label>
           ))}
         </div>
-        <button type="submit">Tao tai khoan</button>
+        <button type="submit">Tạo tài khoản</button>
       </form>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Tai khoan</th>
-              <th>Ho ten</th>
-              <th>Phong ban</th>
-              <th>Vai tro</th>
-              <th>Trang thai</th>
+              <th>Tài khoản</th>
+              <th>Họ tên</th>
+              <th>Phòng ban</th>
+              <th>Vai trò</th>
+              <th>Trạng thái</th>
               <th></th>
             </tr>
           </thead>
@@ -94,8 +94,8 @@ export function AdminUsersPage() {
                 <td>{user.name}</td>
                 <td>{user.department}</td>
                 <td>{user.roles.map((item) => item.role.code).join(", ")}</td>
-                <td>{user.active ? "Dang hoat dong" : "Da vo hieu"}</td>
-                <td><button onClick={() => toggleActive(user)}>{user.active ? "Vo hieu" : "Kich hoat"}</button></td>
+                <td>{user.active ? "Đang hoạt động" : "Đã vô hiệu"}</td>
+                <td><button onClick={() => toggleActive(user)}>{user.active ? "Vô hiệu" : "Kích hoạt"}</button></td>
               </tr>
             ))}
           </tbody>

@@ -20,11 +20,11 @@ distributionRouter.post("/distributions/:id/acknowledge", async (req, res) => {
   const user = currentUser(res);
   const before = await prisma.distribution.findUnique({ where: { id: req.params.id } });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay ban phan phoi." });
+    res.status(404).json({ message: "Không tìm thấy bản phân phối." });
     return;
   }
   if (before.receivingUnit !== user.department && !user.roles.includes("ADMIN")) {
-    res.status(403).json({ message: "Chi phong nhan hoac admin duoc xac nhan." });
+    res.status(403).json({ message: "Chỉ phòng nhận hoặc admin được xác nhận." });
     return;
   }
   const distribution = await prisma.distribution.update({

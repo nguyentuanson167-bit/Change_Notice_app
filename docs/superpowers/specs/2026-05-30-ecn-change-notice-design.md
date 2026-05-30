@@ -68,7 +68,7 @@ The frontend owns UI state and navigation. The backend owns all workflow transit
 - Account management screen for Admin to create, edit, activate/deactivate users, assign departments, and assign roles.
 - Dashboard with counts for TBTD by status, waiting for current user, open annotations, pending distribution acknowledgements.
 - TBTD browser with tabs, search, filters, saved quick views, status badges, and one-click access to detail/print/attachments.
-- Create/edit TBTD form with minimal metadata and attachment upload.
+- Create/edit TBTD form with minimal metadata and attachment upload. The edit entry point must be visible from both the browse list and the detail page for draft, returned, and recalled notices.
 - Detail page with metadata, attachments, workflow state, actions, annotations, distribution status, revision history, and audit trail.
 - Print preview page for the bilingual Change Notice form.
 - Attachment print/download panel for printing individual attachments or the full attachment set.
@@ -112,7 +112,7 @@ Quick actions:
 - Open detail.
 - Print Change Notice.
 - Open attachments.
-- Continue editing when the logged-in author owns a draft or returned item.
+- Continue editing when the logged-in author owns a draft, returned, or recalled item.
 - Sign/return when the logged-in user is eligible.
 - Acknowledge receipt when the notice is distributed to the user's department.
 
@@ -221,16 +221,30 @@ Delegation for absent signers is a production upgrade point. The MVP stores enou
 
 ## Attachments
 
-The MVP accepts PDF and Word files and stores them locally. The backend calculates a checksum and records file metadata. PDF preview can be implemented with browser-native rendering via object/embed links; Word files are downloadable. Annotation is stored separately from the original file so the uploaded document remains unchanged.
+The MVP accepts PDF and Word files and stores them locally. The backend calculates a checksum and records file metadata. PDF preview is shown in the detail screen with a browser-native PDF viewer. Word files are downloadable/openable because browser preview is not reliable without a document conversion service.
+
+Annotation is stored separately from the original file so the uploaded document remains unchanged. For PDF attachments, users can click directly on the preview area to place an annotation marker with relative x/y coordinates, then enter the comment or correction instruction. Existing markers are shown on the preview. For Word attachments, users add notes by page/section/reference text and open the file externally.
 
 Chunked upload and resume are documented as production upgrade points. The MVP will use normal multipart upload with progress on the client.
+
+## Localization
+
+The UI must use Vietnamese with proper diacritics for visible labels, actions, empty states, seeded demo data, and error messages returned by the API. Internal enum values and API constants can remain ASCII/English, but user-facing text should be localized. Attachment file names should preserve Vietnamese diacritics in metadata while the stored disk path uses a safe normalized name.
+
+## Editing And Revision Visibility
+
+The app must make the correction path explicit:
+
+- Draft, returned, and recalled notices show `Sửa` from the browse list and `Sửa phiếu đang triển khai` on the detail page.
+- Approved or distributed notices do not allow direct editing. They show `Tạo bản sửa đổi`; the user must provide a revision reason, and the new revision opens in the edit form.
+- Superseded notices remain readable through browse/detail and their revision chain.
 
 ## Printing
 
 The MVP includes two print functions:
 
-- `In phieu TBTD`: opens a print preview page for the bilingual Change Notice form. The template includes header, product information, change content, electronic signature block, and distribution table. Browser print is the MVP output path.
-- `In tai lieu dinh kem`: lets users open or download attachments for printing. PDF attachments open in browser preview with a print button. Word attachments are downloaded for printing in Word or a compatible viewer.
+- `In phiếu TBTĐ`: opens a print preview page for the bilingual Change Notice form. The template includes header, product information, change content, electronic signature block, and distribution table. Browser print is the MVP output path.
+- `In tài liệu đính kèm`: lets users open or download attachments for printing. PDF attachments open in browser preview with a print button. Word attachments are downloaded for printing in Word or a compatible viewer.
 
 Approved notices display the electronic signer name, role, timestamp, and signature meaning in the signature block. Draft or pending notices print with a visible non-final status marker so they are not mistaken for a controlled approved copy.
 

@@ -31,7 +31,7 @@ adminUsersRouter.get("/admin/users", async (_req, res) => {
 adminUsersRouter.post("/admin/users", async (req, res) => {
   const parsed = userSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Du lieu tai khoan khong hop le.", issues: parsed.error.issues });
+    res.status(400).json({ message: "Dữ liệu tài khoản không hợp lệ.", issues: parsed.error.issues });
     return;
   }
   const actor = currentUser(res);
@@ -54,7 +54,7 @@ adminUsersRouter.post("/admin/users", async (req, res) => {
 adminUsersRouter.put("/admin/users/:id", async (req, res) => {
   const parsed = userSchema.partial().safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Du lieu tai khoan khong hop le.", issues: parsed.error.issues });
+    res.status(400).json({ message: "Dữ liệu tài khoản không hợp lệ.", issues: parsed.error.issues });
     return;
   }
   const actor = currentUser(res);

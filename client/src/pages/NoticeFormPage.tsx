@@ -1,30 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { NavState } from "../App";
 import type { Attachment, ChangeNotice } from "../types";
 
 const initial = {
-  recipient: "Ban Giam doc san xuat",
+  recipient: "Ban Giám đốc sản xuất",
   proposerName: "",
-  proposerDepartment: "Phong NCPT / R&D",
+  proposerDepartment: "Phòng NCPT / R&D",
   productName: "",
   manufacturingProcessCode: "",
   issuedDate: new Date().toISOString().slice(0, 10),
-  notificationIssueNumber: "Lan 1",
+  notificationIssueNumber: "Lần 1",
   title: "",
-  changeType: "Thay doi quy trinh pha che",
-  impactLevel: "Trung binh",
+  changeType: "Thay đổi quy trình pha chế",
+  impactLevel: "Trung bình",
   changeContent: "",
-  effectiveNote: "Phieu thong bao nay co hieu luc ke tu ngay ky va la ban khong the tach roi du thao quy trinh pha che goc."
+  effectiveNote: "Phiếu thông báo này có hiệu lực kể từ ngày ký và là bản không thể tách rời dự thảo quy trình pha chế gốc."
 };
 
-export function NoticeFormPage({ navigate }: { navigate: (nav: NavState) => void }) {
+type FormState = typeof initial;
+
+export function NoticeFormPage({ id, navigate }: { id?: string; navigate: (nav: NavState) => void }) {
   const [form, setForm] = useState(initial);
   const [notice, setNotice] = useState<ChangeNotice | null>(null);
   const [files, setFiles] = useState<Attachment[]>([]);
   const [error, setError] = useState("");
+  const isEditing = Boolean(id);
 
-  function update(name: string, value: string) {
+  useEffect(() => {
+    if (!id) return;
+    api<{ notice: ChangeNotice }>(`/api/notices/${id}`)
+      .then((res) => {
+        setNotice(res.notice);
+        setFiles(res.notice.attachments);
+        setForm({
+          recipient: res.notice.recipient,
+          proposerName: res.notice.proposerName,
+          proposerDepartment: res.notice.proposerDepartment,
+          productName: res.notice.productName,
+          manufacturingProcessCode: res.notice.manufacturingProcessCode,
+          issuedDate: res.notice.issuedDate.slice(0, 10),
+          notificationIssueNumber: res.notice.notificationIssueNumber,
+          title: res.notice.title,
+          changeType: res.notice.changeType,
+          impactLevel: res.notice.impactLevel,
+          changeContent: res.notice.changeContent,
+          effectiveNote: res.notice.effectiveNote
+        });
+      })
+      .catch((err) => setError(err.message));
+  }, [id]);
+
+  function update(name: keyof FormState, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
@@ -32,26 +59,32 @@ export function NoticeFormPage({ navigate }: { navigate: (nav: NavState) => void
     event.preventDefault();
     setError("");
     try {
-      const res = await api<{ notice: ChangeNotice }>("/api/notices", {
-        method: "POST",
+      const res = await api<{ notice: ChangeNotice }>(isEditing ? `/api/notices/${id}` : "/api/notices", {
+        method: isEditing ? "PUT" : "POST",
         body: JSON.stringify(form)
       });
       setNotice(res.notice);
+      setFiles(res.notice.attachments || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Khong luu duoc TBTD.");
+      setError(err instanceof Error ? err.message : "Không lưu được TBTĐ.");
     }
   }
 
   async function upload(fileList: FileList | null) {
     if (!notice || !fileList?.length) return;
+    setError("");
     const formData = new FormData();
     formData.append("file", fileList[0]);
-    formData.append("category", "Tai lieu ho tro");
-    const res = await api<{ attachment: Attachment }>(`/api/notices/${notice.id}/attachments`, {
-      method: "POST",
-      body: formData
-    });
-    setFiles((current) => [res.attachment, ...current]);
+    formData.append("category", "Tài liệu hỗ trợ");
+    try {
+      const res = await api<{ attachment: Attachment }>(`/api/notices/${notice.id}/attachments`, {
+        method: "POST",
+        body: formData
+      });
+      setFiles((current) => [res.attachment, ...current]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không đính kèm được tài liệu.");
+    }
   }
 
   async function submitNotice() {
@@ -64,8 +97,12 @@ export function NoticeFormPage({ navigate }: { navigate: (nav: NavState) => void
     <div>
       <div className="page-title">
         <div>
-          <h1>Tao thong bao thay doi</h1>
-          <p>Nhap thong tin theo phieu Change Notice hien dang su dung.</p>
+          <h1>{isEditing ? "Sửa phiếu thông báo thay đổi" : "Tạo thông báo thay đổi"}</h1>
+          <p>
+            {isEditing
+              ? "Sửa phiếu đang triển khai hoặc bị trả về. Phiếu đã phê duyệt phải tạo bản sửa đổi."
+              : "Nhập thông tin theo phiếu Change Notice hiện đang sử dụng."}
+          </p>
         </div>
       </div>
       {error && <div className="error">{error}</div>}
@@ -74,21 +111,23 @@ export function NoticeFormPage({ navigate }: { navigate: (nav: NavState) => void
           <label key={key} className={key === "changeContent" || key === "effectiveNote" ? "wide" : ""}>
             {labelFor(key)}
             {key === "changeContent" || key === "effectiveNote" ? (
-              <textarea value={value} onChange={(event) => update(key, event.target.value)} rows={5} />
+              <textarea value={value} onChange={(event) => update(key as keyof FormState, event.target.value)} rows={5} />
             ) : (
-              <input type={key === "issuedDate" ? "date" : "text"} value={value} onChange={(event) => update(key, event.target.value)} />
+              <input type={key === "issuedDate" ? "date" : "text"} value={value} onChange={(event) => update(key as keyof FormState, event.target.value)} />
             )}
           </label>
         ))}
         <div className="wide actions">
-          <button type="submit">Luu ban nhap</button>
-          {notice && <button type="button" onClick={submitNotice}>Gui di</button>}
+          <button type="submit">{isEditing ? "Lưu thay đổi" : "Lưu bản nháp"}</button>
+          {notice && <button type="button" onClick={submitNotice}>Gửi đi</button>}
+          {notice && <button type="button" onClick={() => navigate({ page: "detail", id: notice.id })}>Xem chi tiết</button>}
         </div>
       </form>
       {notice && (
         <section className="panel">
-          <h2>Dinh kem tai lieu</h2>
+          <h2>Đính kèm tài liệu</h2>
           <input type="file" accept=".pdf,.doc,.docx" onChange={(event) => upload(event.target.files)} />
+          <p className="hint">Sau khi tải lên, mở trang chi tiết để xem trước PDF, in file gốc và ghi chú trực tiếp trên tài liệu.</p>
           <ul>
             {files.map((file) => <li key={file.id}>{file.fileName} - {Math.round(file.size / 1024)} KB</li>)}
           </ul>
@@ -100,18 +139,18 @@ export function NoticeFormPage({ navigate }: { navigate: (nav: NavState) => void
 
 function labelFor(key: string) {
   const labels: Record<string, string> = {
-    recipient: "Kinh gui / To",
-    proposerName: "Nguoi de nghi / Proponent",
-    proposerDepartment: "Bo phan / Dept",
-    productName: "Ten san pham / Product name",
-    manufacturingProcessCode: "Ma quy trinh / Manufacturing process code",
-    issuedDate: "Ngay ban hanh / Issued date",
-    notificationIssueNumber: "Lan ban hanh phieu",
-    title: "Tieu de / Tom tat",
-    changeType: "Loai thay doi",
-    impactLevel: "Muc tac dong",
-    changeContent: "Noi dung thay doi / Content",
-    effectiveNote: "Ghi chu hieu luc"
+    recipient: "Kính gửi / To",
+    proposerName: "Người đề nghị / Proponent",
+    proposerDepartment: "Bộ phận / Dept",
+    productName: "Tên sản phẩm / Product name",
+    manufacturingProcessCode: "Mã quy trình / Manufacturing process code",
+    issuedDate: "Ngày ban hành / Issued date",
+    notificationIssueNumber: "Lần ban hành phiếu",
+    title: "Tiêu đề / Tóm tắt",
+    changeType: "Loại thay đổi",
+    impactLevel: "Mức tác động",
+    changeContent: "Nội dung thay đổi / Content",
+    effectiveNote: "Ghi chú hiệu lực"
   };
   return labels[key] || key;
 }

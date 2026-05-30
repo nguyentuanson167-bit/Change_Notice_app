@@ -30,7 +30,7 @@ export function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="centered">Dang tai ung dung...</div>;
+  if (loading) return <div className="centered">Đang tải ứng dụng...</div>;
   if (!user) return <LoginPage onLogin={setUser} />;
 
   const navigate = (next: NavState) => setNav(next);
@@ -39,7 +39,7 @@ export function App() {
     <Layout user={user} nav={nav} navigate={navigate} onLogout={() => setUser(null)}>
       {nav.page === "dashboard" && <DashboardPage navigate={navigate} />}
       {nav.page === "browse" && <BrowsePage navigate={navigate} defaultView={nav.view} />}
-      {nav.page === "create" && <NoticeFormPage navigate={navigate} />}
+      {nav.page === "create" && <NoticeFormPage id={nav.id} navigate={navigate} />}
       {nav.page === "detail" && nav.id && <NoticeDetailPage id={nav.id} user={user} navigate={navigate} />}
       {nav.page === "print" && nav.id && <PrintNoticePage id={nav.id} navigate={navigate} />}
       {nav.page === "admin-users" && <AdminUsersPage />}

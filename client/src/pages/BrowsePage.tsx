@@ -4,13 +4,13 @@ import type { NavState } from "../App";
 import type { ChangeNotice } from "../types";
 
 const views = [
-  ["", "Tat ca"],
-  ["in-progress", "Dang thuc hien"],
-  ["my-queue", "Cho toi xu ly"],
-  ["approved", "Da phe duyet"],
-  ["distributed", "Da phan phoi"],
-  ["superseded", "Da thay the"],
-  ["open-annotations", "Co ghi chu mo"]
+  ["", "Tất cả"],
+  ["in-progress", "Đang thực hiện"],
+  ["my-queue", "Chờ tôi xử lý"],
+  ["approved", "Đã phê duyệt"],
+  ["distributed", "Đã phân phối"],
+  ["superseded", "Đã thay thế"],
+  ["open-annotations", "Có ghi chú mở"]
 ];
 
 export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState) => void; defaultView?: string }) {
@@ -34,10 +34,10 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
     <div>
       <div className="page-title">
         <div>
-          <h1>Tra cuu TBTD</h1>
-          <p>Tim va thao tac nhanh voi thong bao dang thuc hien va da phe duyet.</p>
+          <h1>Tra cứu TBTĐ</h1>
+          <p>Tìm và thao tác nhanh với thông báo đang thực hiện và đã phê duyệt.</p>
         </div>
-        <button onClick={() => navigate({ page: "create" })}>Tao moi</button>
+        <button onClick={() => navigate({ page: "create" })}>Tạo mới</button>
       </div>
       <div className="tabs">
         {views.map(([value, label]) => (
@@ -47,33 +47,33 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
         ))}
       </div>
       <div className="filters">
-        <input placeholder="Tim ma, tieu de, san pham, ma quy trinh..." value={q} onChange={(event) => setQ(event.target.value)} />
+        <input placeholder="Tìm mã, tiêu đề, sản phẩm, mã quy trình..." value={q} onChange={(event) => setQ(event.target.value)} />
         <select value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="">Tat ca trang thai</option>
-          <option value="DRAFT">Nhap</option>
-          <option value="RETURNED">Bi tra ve</option>
-          <option value="PENDING_NCPT_LEAD">Cho NCPT ky</option>
-          <option value="PENDING_QA_DEPUTY">Cho Pho DBCL</option>
-          <option value="PENDING_QA_HEAD">Cho TP DBCL</option>
-          <option value="PENDING_PROD_DIRECTOR">Cho GDSX</option>
-          <option value="DISTRIBUTED">Da phan phoi</option>
-          <option value="SUPERSEDED">Da thay the</option>
+          <option value="">Tất cả trạng thái</option>
+          <option value="DRAFT">Nháp</option>
+          <option value="RETURNED">Bị trả về</option>
+          <option value="PENDING_NCPT_LEAD">Chờ NCPT ký</option>
+          <option value="PENDING_QA_DEPUTY">Chờ Phó ĐBCL</option>
+          <option value="PENDING_QA_HEAD">Chờ TP ĐBCL</option>
+          <option value="PENDING_PROD_DIRECTOR">Chờ GĐSX</option>
+          <option value="DISTRIBUTED">Đã phân phối</option>
+          <option value="SUPERSEDED">Đã thay thế</option>
         </select>
-        <button onClick={() => { setQ(""); setStatus(""); setView(""); }}>Xoa loc</button>
+        <button onClick={() => { setQ(""); setStatus(""); setView(""); }}>Xóa lọc</button>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Ma</th>
-              <th>Tieu de</th>
-              <th>San pham / Ma quy trinh</th>
-              <th>Trang thai</th>
-              <th>Nguoi de nghi</th>
-              <th>Ghi chu mo</th>
-              <th>Phan phoi</th>
-              <th>Thao tac</th>
+              <th>Mã</th>
+              <th>Tiêu đề</th>
+              <th>Sản phẩm / Mã quy trình</th>
+              <th>Trạng thái</th>
+              <th>Người đề nghị</th>
+              <th>Ghi chú mở</th>
+              <th>Phân phối</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -87,8 +87,11 @@ export function BrowsePage({ navigate, defaultView }: { navigate: (nav: NavState
                 <td>{notice.annotations.filter((item) => item.status === "OPEN").length}</td>
                 <td>{notice.distributions.filter((item) => item.status === "ACKNOWLEDGED").length}/{notice.distributions.length}</td>
                 <td className="row-actions">
-                  <button onClick={() => navigate({ page: "detail", id: notice.id })}>Chi tiet</button>
-                  <button onClick={() => navigate({ page: "print", id: notice.id })}>In phieu</button>
+                  <button onClick={() => navigate({ page: "detail", id: notice.id })}>Chi tiết</button>
+                  {["DRAFT", "RETURNED", "RECALLED"].includes(notice.status) && (
+                    <button onClick={() => navigate({ page: "create", id: notice.id })}>Sửa</button>
+                  )}
+                  <button onClick={() => navigate({ page: "print", id: notice.id })}>In phiếu</button>
                 </td>
               </tr>
             ))}

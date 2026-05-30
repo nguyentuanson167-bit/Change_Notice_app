@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { NavState } from "../App";
-import type { ChangeNotice, User } from "../types";
+import type { Attachment, ChangeNotice, User } from "../types";
 
 export function NoticeDetailPage({ id, user, navigate }: { id: string; user: User; navigate: (nav: NavState) => void }) {
   const [notice, setNotice] = useState<ChangeNotice | null>(null);
   const [returnReason, setReturnReason] = useState("");
   const [annotation, setAnnotation] = useState("");
+  const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
+  const [markerDraft, setMarkerDraft] = useState<{ x: number; y: number } | null>(null);
   const [error, setError] = useState("");
 
   async function load() {
     const res = await api<{ notice: ChangeNotice }>(`/api/notices/${id}`);
     setNotice(res.notice);
+    setSelectedAttachment((current) => current ?? res.notice.attachments[0] ?? null);
   }
 
   useEffect(() => {
@@ -27,7 +30,31 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
       });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thao tac that bai.");
+      setError(err instanceof Error ? err.message : "Thao tác thất bại.");
+    }
+  }
+
+  async function createRevision() {
+    const reason = window.prompt("Nhập lý do tạo bản sửa đổi cho phiếu đã phê duyệt:");
+    if (!reason?.trim()) return;
+    const res = await api<{ notice: ChangeNotice }>(`/api/notices/${id}/revision`, {
+      method: "POST",
+      body: JSON.stringify({ reason })
+    });
+    navigate({ page: "create", id: res.notice.id });
+  }
+
+  async function upload(fileList: FileList | null) {
+    if (!notice || !fileList?.length) return;
+    setError("");
+    const formData = new FormData();
+    formData.append("file", fileList[0]);
+    formData.append("category", "Tài liệu hỗ trợ");
+    try {
+      await api(`/api/notices/${notice.id}/attachments`, { method: "POST", body: formData });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không đính kèm được tài liệu.");
     }
   }
 
@@ -36,13 +63,27 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
     await api(`/api/notices/${id}/annotations`, {
       method: "POST",
       body: JSON.stringify({
-        type: "GENERAL",
+        attachmentId: selectedAttachment?.id,
+        type: selectedAttachment ? "FILE_MARK" : "GENERAL",
+        pageNumber: selectedAttachment ? 1 : undefined,
+        x: markerDraft?.x,
+        y: markerDraft?.y,
         content: annotation,
         severity: "REQUIRED"
       })
     });
     setAnnotation("");
+    setMarkerDraft(null);
     await load();
+  }
+
+  function markOnPreview(event: React.MouseEvent<HTMLDivElement>) {
+    if (!selectedAttachment) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMarkerDraft({
+      x: Number((((event.clientX - rect.left) / rect.width) * 100).toFixed(2)),
+      y: Number((((event.clientY - rect.top) / rect.height) * 100).toFixed(2))
+    });
   }
 
   async function acknowledge(distributionId: string) {
@@ -50,8 +91,9 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
     await load();
   }
 
-  if (!notice) return <div>{error || "Dang tai chi tiet..."}</div>;
+  if (!notice) return <div>{error || "Đang tải chi tiết..."}</div>;
   const canSubmit = ["DRAFT", "RETURNED", "RECALLED"].includes(notice.status) && notice.authorId === user.id;
+  const canEdit = canSubmit || user.roles.includes("ADMIN");
   const canSign = notice.currentAssigneeRole && user.roles.includes(notice.currentAssigneeRole);
 
   return (
@@ -62,56 +104,81 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
           <p>{notice.title}</p>
         </div>
         <div className="actions">
-          <button onClick={() => navigate({ page: "print", id })}>In phieu</button>
-          <button onClick={() => navigate({ page: "browse" })}>Quay lai</button>
+          {canEdit && <button onClick={() => navigate({ page: "create", id })}>Sửa phiếu đang triển khai</button>}
+          {["DISTRIBUTED", "APPROVED"].includes(notice.status) && <button onClick={createRevision}>Tạo bản sửa đổi</button>}
+          <button onClick={() => navigate({ page: "print", id })}>In phiếu</button>
+          <button onClick={() => navigate({ page: "browse" })}>Quay lại</button>
         </div>
       </div>
       {error && <div className="error">{error}</div>}
       <section className="detail-grid">
         <div className="panel">
-          <h2>Thong tin chung</h2>
-          <Info label="Trang thai" value={notice.status} />
-          <Info label="Nguoi de nghi" value={`${notice.proposerName} - ${notice.proposerDepartment}`} />
-          <Info label="San pham" value={notice.productName} />
-          <Info label="Ma quy trinh" value={notice.manufacturingProcessCode} />
-          <Info label="Lan ban hanh" value={notice.notificationIssueNumber} />
-          <Info label="Loai thay doi" value={notice.changeType} />
-          <Info label="Muc tac dong" value={notice.impactLevel} />
-          <h3>Noi dung thay doi</h3>
+          <h2>Thông tin chung</h2>
+          <Info label="Trạng thái" value={notice.status} />
+          <Info label="Người đề nghị" value={`${notice.proposerName} - ${notice.proposerDepartment}`} />
+          <Info label="Sản phẩm" value={notice.productName} />
+          <Info label="Mã quy trình" value={notice.manufacturingProcessCode} />
+          <Info label="Lần ban hành" value={notice.notificationIssueNumber} />
+          <Info label="Loại thay đổi" value={notice.changeType} />
+          <Info label="Mức tác động" value={notice.impactLevel} />
+          <h3>Nội dung thay đổi</h3>
           <p className="preline">{notice.changeContent}</p>
         </div>
         <div className="panel">
-          <h2>Thao tac</h2>
-          {canSubmit && <button onClick={() => action("submit")}>Gui di</button>}
-          {canSign && <button onClick={() => action("sign")}>Ky / Chuyen tiep</button>}
+          <h2>Thao tác</h2>
+          {canSubmit && <button onClick={() => action("submit")}>Gửi đi</button>}
+          {canSign && <button onClick={() => action("sign")}>Ký / Chuyển tiếp</button>}
           {canSign && (
             <div className="stack">
-              <textarea value={returnReason} onChange={(event) => setReturnReason(event.target.value)} placeholder="Ly do tra ve..." />
-              <button onClick={() => action("return", { reason: returnReason })}>Tra ve</button>
+              <textarea value={returnReason} onChange={(event) => setReturnReason(event.target.value)} placeholder="Lý do trả về..." />
+              <button onClick={() => action("return", { reason: returnReason })}>Trả về</button>
             </div>
           )}
-          {["DISTRIBUTED", "APPROVED"].includes(notice.status) && (
-            <button onClick={() => action("revision", { reason: "Tao ban sua doi tu giao dien" })}>Tao revision</button>
-          )}
-          {!canSubmit && !canSign && <p>Khong co thao tac can xu ly cho tai khoan nay.</p>}
+          {!canSubmit && !canSign && <p>Không có thao tác cần xử lý cho tài khoản này.</p>}
         </div>
       </section>
       <section className="panel">
-        <h2>Tai lieu dinh kem</h2>
-        {notice.attachments.length === 0 && <p>Chua co file dinh kem.</p>}
-        {notice.attachments.map((file) => (
-          <div className="attachment-row" key={file.id}>
-            <span>{file.fileName}</span>
-            <small>{file.category} - {Math.round(file.size / 1024)} KB - SHA256 {file.checksum.slice(0, 12)}...</small>
-            <a href={`/uploads/${file.path}`} target="_blank" rel="noreferrer">Mo / In</a>
+        <h2>Tài liệu đính kèm, xem trước và ghi chú trực tiếp</h2>
+        {canEdit && (
+          <div className="inline-form">
+            <input type="file" accept=".pdf,.doc,.docx" onChange={(event) => upload(event.target.files)} />
           </div>
-        ))}
+        )}
+        {notice.attachments.length === 0 && <p>Chưa có file đính kèm.</p>}
+        <div className="attachment-layout">
+          <div>
+            {notice.attachments.map((file) => (
+              <button
+                className={`attachment-row ${selectedAttachment?.id === file.id ? "active" : ""}`}
+                key={file.id}
+                onClick={() => {
+                  setSelectedAttachment(file);
+                  setMarkerDraft(null);
+                }}
+              >
+                <span>{file.fileName}</span>
+                <small>{file.category} - {Math.round(file.size / 1024)} KB - SHA256 {file.checksum.slice(0, 12)}...</small>
+              </button>
+            ))}
+          </div>
+          <AttachmentPreview
+            attachment={selectedAttachment}
+            annotations={notice.annotations}
+            draft={markerDraft}
+            onMark={markOnPreview}
+          />
+        </div>
       </section>
       <section className="panel">
-        <h2>Ghi chu va danh dau</h2>
+        <h2>Ghi chú và đánh dấu</h2>
+        {selectedAttachment && (
+          <p className="hint">
+            Đang ghi chú trên file: <strong>{selectedAttachment.fileName}</strong>. Bấm trực tiếp lên vùng xem trước để đặt ghim, sau đó nhập nội dung ghi chú.
+          </p>
+        )}
         <div className="inline-form">
-          <input value={annotation} onChange={(event) => setAnnotation(event.target.value)} placeholder="Them ghi chu..." />
-          <button onClick={addAnnotation}>Them</button>
+          <input value={annotation} onChange={(event) => setAnnotation(event.target.value)} placeholder="Nhập ghi chú/hướng dẫn sửa..." />
+          <button onClick={addAnnotation}>Thêm ghi chú</button>
         </div>
         {notice.annotations.map((item) => (
           <div className="note" key={item.id}>
@@ -122,25 +189,25 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
         ))}
       </section>
       <section className="panel">
-        <h2>Luot ky</h2>
+          <h2>Lượt ký</h2>
         <div className="timeline">
           {notice.workflowSteps.map((step) => (
             <div key={step.id}>
               <strong>{step.action}</strong> - {step.requiredRole}
-              <span>{step.signer?.name || "He thong"} - {new Date(step.createdAt).toLocaleString("vi-VN")}</span>
-              {step.returnReason && <p>Ly do: {step.returnReason}</p>}
+              <span>{step.signer?.name || "Hệ thống"} - {new Date(step.createdAt).toLocaleString("vi-VN")}</span>
+              {step.returnReason && <p>Lý do: {step.returnReason}</p>}
             </div>
           ))}
         </div>
       </section>
       <section className="panel">
-        <h2>Phan phoi</h2>
+        <h2>Phân phối</h2>
         {notice.distributions.map((item) => (
           <div className="distribution-row" key={item.id}>
             <span>{item.versionLabel}</span>
             <strong>{item.receivingUnit}</strong>
             <em>{item.status}</em>
-            {item.status !== "ACKNOWLEDGED" && <button onClick={() => acknowledge(item.id)}>Da nhan / Da doc</button>}
+            {item.status !== "ACKNOWLEDGED" && <button onClick={() => acknowledge(item.id)}>Đã nhận / Đã đọc</button>}
           </div>
         ))}
       </section>
@@ -148,11 +215,65 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
         <h2>Audit trail</h2>
         {notice.auditLogs.map((log) => (
           <div className="audit" key={log.id}>
-            <strong>{log.action}</strong> {log.entity} - {log.actor?.name || "He thong"}
+            <strong>{log.action}</strong> {log.entity} - {log.actor?.name || "Hệ thống"}
             <span>{new Date(log.createdAt).toLocaleString("vi-VN")}</span>
           </div>
         ))}
       </section>
+    </div>
+  );
+}
+
+function AttachmentPreview({
+  attachment,
+  annotations,
+  draft,
+  onMark
+}: {
+  attachment: Attachment | null;
+  annotations: ChangeNotice["annotations"];
+  draft: { x: number; y: number } | null;
+  onMark: (event: React.MouseEvent<HTMLDivElement>) => void;
+}) {
+  if (!attachment) {
+    return <div className="attachment-preview empty">Chọn một tài liệu để xem trước.</div>;
+  }
+
+  const url = `/uploads/${attachment.path}`;
+  const isPdf = attachment.fileName.toLowerCase().endsWith(".pdf") || attachment.mimeType.includes("pdf");
+  const marks = annotations.filter((item) => item.attachmentId === attachment.id && typeof item.x === "number" && typeof item.y === "number");
+
+  return (
+    <div className="attachment-preview">
+      <div className="preview-toolbar">
+        <strong>Xem trước: {attachment.fileName}</strong>
+        <a href={url} target="_blank" rel="noreferrer">Mở/In file gốc</a>
+      </div>
+      {isPdf ? (
+        <div className="pdf-preview">
+          <object data={url} type="application/pdf">
+            <iframe src={url} title={attachment.fileName} />
+          </object>
+          <div className="annotation-layer" onClick={onMark}>
+            {marks.map((mark) => (
+              <span
+                key={mark.id}
+                className="annotation-pin"
+                style={{ left: `${mark.x}%`, top: `${mark.y}%` }}
+                title={mark.content}
+              >
+                {mark.status === "RESOLVED" ? "✓" : "!"}
+              </span>
+            ))}
+            {draft && <span className="annotation-pin draft" style={{ left: `${draft.x}%`, top: `${draft.y}%` }}>+</span>}
+          </div>
+        </div>
+      ) : (
+        <div className="word-preview">
+          <p>File Word chưa xem trực tiếp trong trình duyệt. Bạn có thể tải/mở file để in, và ghi chú bằng trang/mục/dòng tham chiếu ở ô ghi chú.</p>
+          <a href={url} target="_blank" rel="noreferrer">Tải hoặc mở tài liệu Word</a>
+        </div>
+      )}
     </div>
   );
 }

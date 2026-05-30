@@ -29,29 +29,29 @@ export function DashboardPage({ navigate }: { navigate: (nav: NavState) => void 
     <div>
       <div className="page-title">
         <div>
-          <h1>Tong quan</h1>
-          <p>Theo doi TBTD dang thuc hien, da duyet va phan phoi.</p>
+          <h1>Tổng quan</h1>
+          <p>Theo dõi TBTĐ đang thực hiện, đã duyệt và phân phối.</p>
         </div>
-        <button onClick={() => navigate({ page: "create" })}>Tao TBTD moi</button>
+        <button onClick={() => navigate({ page: "create" })}>Tạo TBTĐ mới</button>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="metric-grid">
-        <Metric label="Tat ca TBTD" value={counts.total} onClick={() => navigate({ page: "browse" })} />
-        <Metric label="Dang thuc hien" value={counts.inProgress} onClick={() => navigate({ page: "browse", view: "in-progress" })} />
-        <Metric label="Cho xu ly" value={counts.queue} onClick={() => navigate({ page: "browse", view: "my-queue" })} />
-        <Metric label="Da phe duyet" value={counts.approved} onClick={() => navigate({ page: "browse", view: "approved" })} />
-        <Metric label="Ghi chu mo" value={counts.annotations} onClick={() => navigate({ page: "browse", view: "open-annotations" })} />
-        <Metric label="Chua xac nhan nhan" value={counts.pendingAck} onClick={() => navigate({ page: "browse", view: "distributed" })} />
+        <Metric label="Tất cả TBTĐ" value={counts.total} onClick={() => navigate({ page: "browse" })} />
+        <Metric label="Đang thực hiện" value={counts.inProgress} onClick={() => navigate({ page: "browse", view: "in-progress" })} />
+        <Metric label="Chờ xử lý" value={counts.queue} onClick={() => navigate({ page: "browse", view: "my-queue" })} />
+        <Metric label="Đã phê duyệt" value={counts.approved} onClick={() => navigate({ page: "browse", view: "approved" })} />
+        <Metric label="Ghi chú mở" value={counts.annotations} onClick={() => navigate({ page: "browse", view: "open-annotations" })} />
+        <Metric label="Chưa xác nhận nhận" value={counts.pendingAck} onClick={() => navigate({ page: "browse", view: "distributed" })} />
       </div>
-      <h2>Hoat dong gan day</h2>
+      <h2>Hoạt động gần đây</h2>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Ma</th>
-              <th>Tieu de</th>
-              <th>Trang thai</th>
-              <th>Cap nhat</th>
+              <th>Mã</th>
+              <th>Tiêu đề</th>
+              <th>Trạng thái</th>
+              <th>Cập nhật</th>
               <th></th>
             </tr>
           </thead>
@@ -62,7 +62,7 @@ export function DashboardPage({ navigate }: { navigate: (nav: NavState) => void 
                 <td>{notice.title}</td>
                 <td><span className={`badge ${notice.status.toLowerCase()}`}>{notice.status}</span></td>
                 <td>{new Date(notice.updatedAt).toLocaleString("vi-VN")}</td>
-                <td><button onClick={() => navigate({ page: "detail", id: notice.id })}>Mo</button></td>
+                <td><button onClick={() => navigate({ page: "detail", id: notice.id })}>Mở</button></td>
               </tr>
             ))}
           </tbody>

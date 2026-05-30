@@ -22,7 +22,7 @@ annotationRouter.use(requireAuth);
 annotationRouter.post("/notices/:id/annotations", async (req, res) => {
   const parsed = annotationSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Ghi chu khong hop le.", issues: parsed.error.issues });
+    res.status(400).json({ message: "Ghi chú không hợp lệ.", issues: parsed.error.issues });
     return;
   }
   const user = currentUser(res);
@@ -49,12 +49,12 @@ annotationRouter.put("/annotations/:id/status", async (req, res) => {
   const user = currentUser(res);
   const status = String(req.body?.status || "").toUpperCase();
   if (!["OPEN", "RESOLVED"].includes(status)) {
-    res.status(400).json({ message: "Trang thai ghi chu khong hop le." });
+    res.status(400).json({ message: "Trạng thái ghi chú không hợp lệ." });
     return;
   }
   const before = await prisma.annotation.findUnique({ where: { id: req.params.id } });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay ghi chu." });
+    res.status(404).json({ message: "Không tìm thấy ghi chú." });
     return;
   }
   const annotation = await prisma.annotation.update({
@@ -70,12 +70,12 @@ annotationRouter.post("/annotations/:id/replies", async (req, res) => {
   const user = currentUser(res);
   const content = String(req.body?.content || "").trim();
   if (!content) {
-    res.status(400).json({ message: "Noi dung phan hoi la bat buoc." });
+    res.status(400).json({ message: "Nội dung phản hồi là bắt buộc." });
     return;
   }
   const annotation = await prisma.annotation.findUnique({ where: { id: req.params.id } });
   if (!annotation) {
-    res.status(404).json({ message: "Khong tim thay ghi chu." });
+    res.status(404).json({ message: "Không tìm thấy ghi chú." });
     return;
   }
   const reply = await prisma.annotationReply.create({

@@ -3,39 +3,39 @@ import { prisma } from "../server/src/db";
 import { DEMO_PASSWORD } from "../server/src/seedPasswords";
 
 const roles = [
-  ["AUTHOR", "Nhan vien NCPT"],
-  ["NCPT_LEAD", "Phu trach / Truong nhom NCPT"],
-  ["QA_DEPUTY", "Pho phong DBCL"],
-  ["QA_HEAD", "Truong phong DBCL"],
-  ["PROD_DIRECTOR", "Giam doc san xuat"],
-  ["ADMIN", "Quan tri he thong"],
-  ["VIEWER", "Nguoi xem"]
+  ["AUTHOR", "Nhân viên NCPT"],
+  ["NCPT_LEAD", "Phụ trách / Trưởng nhóm NCPT"],
+  ["QA_DEPUTY", "Phó phòng ĐBCL"],
+  ["QA_HEAD", "Trưởng phòng ĐBCL"],
+  ["PROD_DIRECTOR", "Giám đốc sản xuất"],
+  ["ADMIN", "Quản trị hệ thống"],
+  ["VIEWER", "Người xem"]
 ] as const;
 
 const users = [
-  ["author", "Nguyen Van Anh", "author@vinphaco.local", "Phong NCPT / R&D", ["AUTHOR"]],
-  ["author2", "Tran Thi Binh", "author2@vinphaco.local", "Phong NCPT / R&D", ["AUTHOR"]],
-  ["lead", "Le Van Cuong", "lead@vinphaco.local", "Phong NCPT / R&D", ["NCPT_LEAD"]],
-  ["qa-deputy", "Pham Thi Dung", "qa-deputy@vinphaco.local", "Phong DBCL / QA", ["QA_DEPUTY"]],
-  ["qa-head", "Hoang Van Em", "qa-head@vinphaco.local", "Phong DBCL / QA", ["QA_HEAD"]],
-  ["director", "Do Van Giang", "director@vinphaco.local", "BGD san xuat", ["PROD_DIRECTOR"]],
-  ["admin", "Quan tri he thong", "admin@vinphaco.local", "IT/DBCL", ["ADMIN"]],
-  ["viewer", "Nguoi xem", "viewer@vinphaco.local", "Xuong san xuat / Factory", ["VIEWER"]]
+  ["author", "Nguyễn Văn Anh", "author@vinphaco.local", "Phòng NCPT / R&D", ["AUTHOR"]],
+  ["author2", "Trần Thị Bình", "author2@vinphaco.local", "Phòng NCPT / R&D", ["AUTHOR"]],
+  ["lead", "Lê Văn Cường", "lead@vinphaco.local", "Phòng NCPT / R&D", ["NCPT_LEAD"]],
+  ["qa-deputy", "Phạm Thị Dung", "qa-deputy@vinphaco.local", "Phòng ĐBCL / QA", ["QA_DEPUTY"]],
+  ["qa-head", "Hoàng Văn Em", "qa-head@vinphaco.local", "Phòng ĐBCL / QA", ["QA_HEAD"]],
+  ["director", "Đỗ Văn Giang", "director@vinphaco.local", "BGĐ sản xuất", ["PROD_DIRECTOR"]],
+  ["admin", "Quản trị hệ thống", "admin@vinphaco.local", "IT/ĐBCL", ["ADMIN"]],
+  ["viewer", "Người xem", "viewer@vinphaco.local", "Xưởng sản xuất / Factory", ["VIEWER"]]
 ] as const;
 
 function noticeBase(authorId: string) {
   return {
-    recipient: "Ban Giam doc san xuat",
-    proposerName: "Nguyen Van Anh",
-    proposerDepartment: "Phong Nghien cuu phat trien / R&D",
+    recipient: "Ban Giám đốc sản xuất",
+    proposerName: "Nguyễn Văn Anh",
+    proposerDepartment: "Phòng Nghiên cứu phát triển / R&D",
     productName: "Vinmagel",
     manufacturingProcessCode: "NCPT/QT-PC/2025-001",
     issuedDate: new Date("2025-01-24T00:00:00.000Z"),
-    notificationIssueNumber: "Lan 2",
-    changeType: "Thay doi quy trinh pha che",
-    impactLevel: "Trung binh",
+    notificationIssueNumber: "Lần 2",
+    changeType: "Thay đổi quy trình pha chế",
+    impactLevel: "Trung bình",
     effectiveNote:
-      "Phieu thong bao nay co hieu luc ke tu ngay ky va la ban khong the tach roi du thao quy trinh pha che goc.",
+      "Phiếu thông báo này có hiệu lực kể từ ngày ký và là bản không thể tách rời dự thảo quy trình pha chế gốc.",
     authorId
   };
 }
@@ -85,9 +85,9 @@ async function main() {
     create: {
       ...noticeBase(authorId),
       code: "TBTD-NCPT-2026-0001",
-      title: "Cap nhat thong so kiem tra ban thanh pham",
+      title: "Cập nhật thông số kiểm tra bán thành phẩm",
       changeContent:
-        "Dieu chinh muc AQL va bo sung cach ghi nhan ket qua kiem tra trong quy trinh pha che.",
+        "Điều chỉnh mức AQL và bổ sung cách ghi nhận kết quả kiểm tra trong quy trình pha chế.",
       status: "DRAFT"
     }
   });
@@ -98,9 +98,9 @@ async function main() {
     create: {
       ...noticeBase(authorId),
       code: "TBTD-NCPT-2026-0002",
-      title: "Thay doi buoc tron sau pha che",
+      title: "Thay đổi bước trộn sau pha chế",
       changeContent:
-        "Bo sung thoi gian cho buoc tron sau pha che de dam bao dong nhat hon.",
+        "Bổ sung thời gian cho bước trộn sau pha chế để đảm bảo đồng nhất hơn.",
       status: "PENDING_QA_DEPUTY",
       currentAssigneeRole: "QA_DEPUTY"
     }
@@ -113,7 +113,7 @@ async function main() {
         requiredRole: "AUTHOR",
         action: "SUBMITTED",
         signerId: authorId,
-        signatureMeaning: "Da soan va gui"
+        signatureMeaning: "Đã soạn và gửi"
       },
       {
         noticeId: pending.id,
@@ -121,7 +121,7 @@ async function main() {
         requiredRole: "NCPT_LEAD",
         action: "SIGNED",
         signerId: leadId,
-        signatureMeaning: "Da kiem tra va xac nhan"
+        signatureMeaning: "Đã kiểm tra và xác nhận"
       }
     ]) {
     const existing = await prisma.workflowStep.findFirst({
@@ -136,19 +136,19 @@ async function main() {
     create: {
       ...noticeBase(authorId),
       code: "TBTD-NCPT-2026-0003",
-      title: "Cap nhat quy trinh dong goi thanh pham",
+      title: "Cập nhật quy trình đóng gói thành phẩm",
       changeContent:
-        "Ap dung nhan dien moi tren bao bi thanh pham va cap nhat bang kiem tra dong goi.",
+        "Áp dụng nhận diện mới trên bao bì thành phẩm và cập nhật bảng kiểm tra đóng gói.",
       status: "DISTRIBUTED"
     }
   });
 
   const approvedSteps = [
-      ["AUTHOR", "SUBMITTED", authorId, "Da soan va gui"],
-      ["NCPT_LEAD", "SIGNED", leadId, "Da kiem tra va xac nhan"],
-      ["QA_DEPUTY", "SIGNED", qaDeputyId, "Da tham dinh"],
-      ["QA_HEAD", "SIGNED", qaHeadId, "Da phe duyet cap phong QA"],
-      ["PROD_DIRECTOR", "APPROVED", directorId, "Phe duyet cuoi cung"]
+      ["AUTHOR", "SUBMITTED", authorId, "Đã soạn và gửi"],
+      ["NCPT_LEAD", "SIGNED", leadId, "Đã kiểm tra và xác nhận"],
+      ["QA_DEPUTY", "SIGNED", qaDeputyId, "Đã thẩm định"],
+      ["QA_HEAD", "SIGNED", qaHeadId, "Đã phê duyệt cấp phòng QA"],
+      ["PROD_DIRECTOR", "APPROVED", directorId, "Phê duyệt cuối cùng"]
     ].map(([requiredRole, action, signerId, signatureMeaning], index) => ({
       noticeId: approved.id,
       sequence: index + 1,
@@ -165,9 +165,9 @@ async function main() {
   }
 
   for (const [receivingUnit, versionLabel] of [
-    ["Phong NCPT / R&D", "Ban goc / Original"],
-    ["Phong DBCL / QA", "Ban copy / Copy"],
-    ["Xuong san xuat / Factory", "Ban copy / Copy"]
+    ["Phòng NCPT / R&D", "Bản gốc / Original"],
+    ["Phòng ĐBCL / QA", "Bản copy / Copy"],
+    ["Xưởng sản xuất / Factory", "Bản copy / Copy"]
   ]) {
     const existing = await prisma.distribution.findFirst({
       where: { noticeId: approved.id, receivingUnit }
@@ -186,7 +186,7 @@ async function main() {
       id: "seed-open-annotation",
       noticeId: draft.id,
       type: "GENERAL",
-      content: "Can lam ro muc thay doi trong bang kiem tra.",
+      content: "Cần làm rõ mức thay đổi trong bảng kiểm tra.",
       severity: "REQUIRED",
       creatorId: leadId
     }

@@ -120,7 +120,7 @@ changeNoticeRouter.get("/:id", async (req, res) => {
     include: includeNotice()
   });
   if (!notice) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   res.json({ notice });
@@ -129,12 +129,12 @@ changeNoticeRouter.get("/:id", async (req, res) => {
 changeNoticeRouter.post("/", async (req, res) => {
   const parsed = noticeSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Du lieu TBTD khong hop le.", issues: parsed.error.issues });
+    res.status(400).json({ message: "Dữ liệu TBTĐ không hợp lệ.", issues: parsed.error.issues });
     return;
   }
   const user = currentUser(res);
   if (!user.roles.includes("AUTHOR") && !user.roles.includes("ADMIN")) {
-    res.status(403).json({ message: "Chi nguoi soan hoac admin duoc tao TBTD." });
+    res.status(403).json({ message: "Chỉ người soạn hoặc admin được tạo TBTĐ." });
     return;
   }
   const notice = await prisma.changeNotification.create({
@@ -144,7 +144,7 @@ changeNoticeRouter.post("/", async (req, res) => {
       issuedDate: new Date(parsed.data.issuedDate),
       effectiveNote:
         parsed.data.effectiveNote ||
-        "Phieu thong bao nay co hieu luc ke tu ngay ky va la ban khong the tach roi du thao quy trinh pha che goc.",
+        "Phiếu thông báo này có hiệu lực kể từ ngày ký và là bản không thể tách rời dự thảo quy trình pha chế gốc.",
       authorId: user.id
     },
     include: includeNotice()
@@ -156,21 +156,21 @@ changeNoticeRouter.post("/", async (req, res) => {
 changeNoticeRouter.put("/:id", async (req, res) => {
   const parsed = noticeSchema.partial().safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Du lieu cap nhat khong hop le.", issues: parsed.error.issues });
+    res.status(400).json({ message: "Dữ liệu cập nhật không hợp lệ.", issues: parsed.error.issues });
     return;
   }
   const user = currentUser(res);
   const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id } });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   if (!["DRAFT", "RETURNED", "RECALLED"].includes(before.status)) {
-    res.status(409).json({ message: "TBTD da khoa, khong the sua truc tiep." });
+    res.status(409).json({ message: "TBTĐ đã khóa, không thể sửa trực tiếp." });
     return;
   }
   if (before.authorId !== user.id && !user.roles.includes("ADMIN")) {
-    res.status(403).json({ message: "Ban chi duoc sua TBTD cua minh." });
+    res.status(403).json({ message: "Bạn chỉ được sửa TBTĐ của mình." });
     return;
   }
   const notice = await prisma.changeNotification.update({
@@ -189,15 +189,15 @@ changeNoticeRouter.post("/:id/submit", async (req, res) => {
   const user = currentUser(res);
   const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id } });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   if (before.authorId !== user.id && !user.roles.includes("ADMIN")) {
-    res.status(403).json({ message: "Chi nguoi soan duoc gui TBTD." });
+    res.status(403).json({ message: "Chỉ người soạn được gửi TBTĐ." });
     return;
   }
   if (!["DRAFT", "RETURNED", "RECALLED"].includes(before.status)) {
-    res.status(409).json({ message: "Trang thai hien tai khong cho phep gui." });
+    res.status(409).json({ message: "Trạng thái hiện tại không cho phép gửi." });
     return;
   }
   const notice = await prisma.changeNotification.update({
@@ -212,7 +212,7 @@ changeNoticeRouter.post("/:id/submit", async (req, res) => {
       requiredRole: "AUTHOR",
       action: "SUBMITTED",
       signerId: user.id,
-      signatureMeaning: "Da soan va gui"
+      signatureMeaning: "Đã soạn và gửi"
     }
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "SUBMIT", before, after: notice, ip: req.ip });
@@ -223,11 +223,11 @@ changeNoticeRouter.post("/:id/sign", async (req, res) => {
   const user = currentUser(res);
   const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id }, include: includeNotice() });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   if (!canRoleAct(before.status, user.roles)) {
-    res.status(403).json({ message: "TBTD nay khong cho vai tro cua ban ky." });
+    res.status(403).json({ message: "TBTĐ này không chờ vai trò của bạn ký." });
     return;
   }
   const step = getWorkflowStep(before.status)!;
@@ -276,11 +276,11 @@ changeNoticeRouter.post("/:id/return", async (req, res) => {
   const user = currentUser(res);
   const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id }, include: includeNotice() });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   if (!canRoleAct(before.status, user.roles)) {
-    res.status(403).json({ message: "Ban khong phu trach buoc ky hien tai." });
+    res.status(403).json({ message: "Bạn không phụ trách bước ký hiện tại." });
     return;
   }
   const step = getWorkflowStep(before.status)!;
@@ -296,7 +296,7 @@ changeNoticeRouter.post("/:id/return", async (req, res) => {
       requiredRole: step.requiredRole,
       action: "RETURNED",
       signerId: user.id,
-      signatureMeaning: "Tra ve de chinh sua",
+      signatureMeaning: "Trả về để chỉnh sửa",
       returnReason: reason
     }
   });
@@ -308,15 +308,15 @@ changeNoticeRouter.post("/:id/recall", async (req, res) => {
   const user = currentUser(res);
   const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id }, include: includeNotice() });
   if (!before) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   if (before.authorId !== user.id) {
-    res.status(403).json({ message: "Chi nguoi soan duoc thu hoi." });
+    res.status(403).json({ message: "Chỉ người soạn được thu hồi." });
     return;
   }
   if (before.workflowSteps.some((step) => step.action === "SIGNED" || step.action === "APPROVED")) {
-    res.status(409).json({ message: "Khong the thu hoi sau khi co nguoi ky." });
+    res.status(409).json({ message: "Không thể thu hồi sau khi có người ký." });
     return;
   }
   const notice = await prisma.changeNotification.update({
@@ -332,16 +332,16 @@ changeNoticeRouter.post("/:id/revision", async (req, res) => {
   const user = currentUser(res);
   const reason = String(req.body?.reason || "").trim();
   if (!reason) {
-    res.status(400).json({ message: "Ly do sua doi la bat buoc." });
+    res.status(400).json({ message: "Lý do sửa đổi là bắt buộc." });
     return;
   }
   const original = await prisma.changeNotification.findUnique({ where: { id: req.params.id }, include: { attachments: true } });
   if (!original) {
-    res.status(404).json({ message: "Khong tim thay TBTD goc." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ gốc." });
     return;
   }
   if (!["APPROVED", "DISTRIBUTED"].includes(original.status)) {
-    res.status(409).json({ message: "Chi TBTD da duyet moi tao revision." });
+    res.status(409).json({ message: "Chỉ TBTĐ đã duyệt mới tạo bản sửa đổi." });
     return;
   }
   const revision = await prisma.$transaction(async (tx) => {

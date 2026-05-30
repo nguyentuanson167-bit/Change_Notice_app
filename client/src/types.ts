@@ -61,8 +61,11 @@ export type AnnotationReply = {
 
 export type Annotation = {
   id: string;
+  attachmentId?: string;
   type: string;
   pageNumber?: number;
+  x?: number;
+  y?: number;
   referenceText?: string;
   content: string;
   severity: string;

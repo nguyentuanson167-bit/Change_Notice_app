@@ -23,21 +23,21 @@ export function Layout({ user, nav, navigate, onLogout, children }: Props) {
       <aside className="sidebar">
         <div className="brand">
           <strong>eCN</strong>
-          <span>Quan ly TBTD</span>
+          <span>Quản lý TBTĐ</span>
         </div>
         <button className={nav.page === "dashboard" ? "active" : ""} onClick={() => navigate({ page: "dashboard" })}>
-          Tong quan
+          Tổng quan
         </button>
         <button className={nav.page === "browse" ? "active" : ""} onClick={() => navigate({ page: "browse" })}>
-          Tra cuu TBTD
+          Tra cứu TBTĐ
         </button>
-        <button onClick={() => navigate({ page: "browse", view: "my-queue" })}>Cho toi xu ly</button>
+        <button onClick={() => navigate({ page: "browse", view: "my-queue" })}>Chờ tôi xử lý</button>
         <button className={nav.page === "create" ? "active" : ""} onClick={() => navigate({ page: "create" })}>
-          Tao TBTD
+          Tạo TBTĐ
         </button>
         {isAdmin && (
           <button className={nav.page === "admin-users" ? "active" : ""} onClick={() => navigate({ page: "admin-users" })}>
-            Tai khoan
+            Tài khoản
           </button>
         )}
       </aside>
@@ -48,9 +48,9 @@ export function Layout({ user, nav, navigate, onLogout, children }: Props) {
             <span>{user.department}</span>
           </div>
           <div className="role-list">{user.roles.join(" | ")}</div>
-          <button className="icon-button" onClick={logout} title="Dang xuat">
+          <button className="icon-button" onClick={logout} title="Đăng xuất">
             <LogOut size={18} />
-            Dang xuat
+            Đăng xuất
           </button>
         </header>
         <section className="content">{children}</section>

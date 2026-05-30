@@ -1213,3 +1213,24 @@ Add:
   - The plan contains no placeholder steps or unspecified future-work instructions.
 - Type consistency:
   - Prisma enum names and route names are referenced consistently across backend and frontend tasks.
+
+## Change Request Follow-Up Plan
+
+The following fixes were added after initial MVP implementation:
+
+- Localize visible UI copy into Vietnamese with proper diacritics.
+- Localize backend error messages and seeded demo data that can appear in the UI.
+- Preserve Vietnamese attachment names in database metadata while saving normalized safe file names on disk.
+- Make edit actions explicit:
+  - Browse rows for `DRAFT`, `RETURNED`, and `RECALLED` show `Sửa`.
+  - Detail page shows `Sửa phiếu đang triển khai` for editable notices.
+  - Approved/distributed notices show `Tạo bản sửa đổi` and require a revision reason.
+- Improve attachments:
+  - Detail page includes an attachment list plus a PDF preview panel.
+  - PDF preview supports placing annotation markers by clicking directly on the preview area.
+  - Annotation markers are stored with attachment id and relative x/y coordinates.
+  - Word attachments show an open/download path plus reference-text annotation guidance.
+- Verification for this follow-up:
+  - Run `npm run test`.
+  - Run `npm run build`.
+  - Confirm dev server still answers `/api/health` and frontend loads.

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
 import { prisma } from "../db.js";
 import { currentUser, requireAuth } from "./auth.js";
@@ -14,10 +14,16 @@ const uploadRoot = path.resolve(__dirname, "../../uploads");
 
 fs.mkdirSync(uploadRoot, { recursive: true });
 
+function normalizeUploadName(name: string) {
+  const decoded = Buffer.from(name, "latin1").toString("utf8");
+  return decoded.includes("�") ? name : decoded;
+}
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadRoot),
   filename: (_req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const originalName = normalizeUploadName(file.originalname);
+    const safeName = originalName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9.\-_]/g, "_");
     cb(null, `${Date.now()}-${crypto.randomUUID()}-${safeName}`);
   }
 });
@@ -28,7 +34,7 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (![".pdf", ".doc", ".docx"].includes(ext)) {
-      cb(new Error("Chi chap nhan file PDF, DOC, DOCX."));
+      cb(new Error("Chỉ chấp nhận file PDF, DOC, DOCX."));
       return;
     }
     cb(null, true);
@@ -50,32 +56,33 @@ attachmentRouter.get("/notices/:id/attachments", async (req, res) => {
 attachmentRouter.post("/notices/:id/attachments", upload.single("file"), async (req, res) => {
   const user = currentUser(res);
   if (!req.file) {
-    res.status(400).json({ message: "Chua co file dinh kem." });
+    res.status(400).json({ message: "Chưa có file đính kèm." });
     return;
   }
 
   const notice = await prisma.changeNotification.findUnique({ where: { id: req.params.id } });
   if (!notice) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
   if (!["DRAFT", "RETURNED", "RECALLED"].includes(notice.status)) {
-    res.status(409).json({ message: "Chi duoc dinh kem khi TBTD con co the sua." });
+    res.status(409).json({ message: "Chỉ được đính kèm khi TBTĐ còn có thể sửa." });
     return;
   }
   if (notice.authorId !== user.id && !user.roles.includes("ADMIN")) {
-    res.status(403).json({ message: "Chi nguoi soan duoc dinh kem file." });
+    res.status(403).json({ message: "Chỉ người soạn được đính kèm file." });
     return;
   }
 
   const buffer = fs.readFileSync(req.file.path);
+  const originalName = normalizeUploadName(req.file.originalname);
   const checksum = crypto.createHash("sha256").update(buffer).digest("hex");
   const attachment = await prisma.attachment.create({
     data: {
       noticeId: notice.id,
-      fileName: req.file.originalname,
+      fileName: originalName,
       mimeType: req.file.mimetype,
-      category: String(req.body.category || "Tai lieu ho tro"),
+      category: String(req.body.category || "Tài liệu hỗ trợ"),
       size: req.file.size,
       checksum,
       path: req.file.filename
@@ -84,4 +91,12 @@ attachmentRouter.post("/notices/:id/attachments", upload.single("file"), async (
 
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "Attachment", action: "UPLOAD", after: attachment, ip: req.ip });
   res.status(201).json({ attachment });
+});
+
+attachmentRouter.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
+  if (!err) {
+    next();
+    return;
+  }
+  res.status(400).json({ message: err.message || "Không đính kèm được tài liệu." });
 });

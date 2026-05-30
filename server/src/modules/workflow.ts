@@ -2,29 +2,29 @@ export const workflowOrder = [
   {
     pendingStatus: "PENDING_NCPT_LEAD",
     requiredRole: "NCPT_LEAD",
-    signatureMeaning: "Da kiem tra va xac nhan"
+    signatureMeaning: "Đã kiểm tra và xác nhận"
   },
   {
     pendingStatus: "PENDING_QA_DEPUTY",
     requiredRole: "QA_DEPUTY",
-    signatureMeaning: "Da tham dinh"
+    signatureMeaning: "Đã thẩm định"
   },
   {
     pendingStatus: "PENDING_QA_HEAD",
     requiredRole: "QA_HEAD",
-    signatureMeaning: "Da phe duyet cap phong QA"
+    signatureMeaning: "Đã phê duyệt cấp phòng QA"
   },
   {
     pendingStatus: "PENDING_PROD_DIRECTOR",
     requiredRole: "PROD_DIRECTOR",
-    signatureMeaning: "Phe duyet cuoi cung"
+    signatureMeaning: "Phê duyệt cuối cùng"
   }
 ] as const;
 
 export const distributionUnits = [
-  { receivingUnit: "Phong NCPT / R&D", versionLabel: "Ban goc / Original" },
-  { receivingUnit: "Phong DBCL / QA", versionLabel: "Ban copy / Copy" },
-  { receivingUnit: "Xuong san xuat / Factory", versionLabel: "Ban copy / Copy" }
+  { receivingUnit: "Phòng NCPT / R&D", versionLabel: "Bản gốc / Original" },
+  { receivingUnit: "Phòng ĐBCL / QA", versionLabel: "Bản copy / Copy" },
+  { receivingUnit: "Xưởng sản xuất / Factory", versionLabel: "Bản copy / Copy" }
 ];
 
 export const activeStatuses = [

@@ -348,6 +348,93 @@ th {
   gap: 0.25rem;
 }
 
+.attachment-row {
+  width: 100%;
+  text-align: left;
+}
+
+.attachment-row.active {
+  border-color: #1f5fbf;
+  background: #edf5ff;
+}
+
+.attachment-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(360px, 1.6fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.attachment-preview {
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  background: #f8fafd;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.attachment-preview.empty,
+.word-preview {
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  text-align: center;
+  color: #5a6578;
+}
+
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #d8dee9;
+  background: #ffffff;
+}
+
+.pdf-preview {
+  position: relative;
+  min-height: 620px;
+  background: #eef2f8;
+}
+
+.pdf-preview object,
+.pdf-preview iframe {
+  width: 100%;
+  height: 620px;
+  border: 0;
+}
+
+.annotation-layer {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.annotation-pin {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #c02626;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+}
+
+.annotation-pin.draft {
+  background: #1f5fbf;
+}
+
+.hint {
+  color: #5a6578;
+  margin-top: 0;
+}
+
 .distribution-row {
   grid-template-columns: 150px 1fr 120px auto;
   align-items: center;
@@ -425,7 +512,8 @@ th {
     position: static;
   }
   .detail-grid,
-  .form-grid {
+  .form-grid,
+  .attachment-layout {
     grid-template-columns: 1fr;
   }
 }

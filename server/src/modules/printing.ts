@@ -17,7 +17,7 @@ printingRouter.get("/notices/:id/print-data", async (req, res) => {
     }
   });
   if (!notice) {
-    res.status(404).json({ message: "Khong tim thay TBTD." });
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
     return;
   }
 

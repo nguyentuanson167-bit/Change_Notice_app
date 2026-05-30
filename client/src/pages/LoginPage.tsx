@@ -3,14 +3,14 @@ import { api } from "../api";
 import type { User } from "../types";
 
 const accounts = [
-  ["author", "Nhan vien NCPT"],
-  ["author2", "Nhan vien NCPT 2"],
-  ["lead", "Truong nhom NCPT"],
-  ["qa-deputy", "Pho phong DBCL"],
-  ["qa-head", "Truong phong DBCL"],
-  ["director", "Giam doc san xuat"],
-  ["admin", "Quan tri"],
-  ["viewer", "Nguoi xem"]
+  ["author", "Nhân viên NCPT"],
+  ["author2", "Nhân viên NCPT 2"],
+  ["lead", "Trưởng nhóm NCPT"],
+  ["qa-deputy", "Phó phòng ĐBCL"],
+  ["qa-head", "Trưởng phòng ĐBCL"],
+  ["director", "Giám đốc sản xuất"],
+  ["admin", "Quản trị"],
+  ["viewer", "Người xem"]
 ];
 
 export function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
@@ -28,7 +28,7 @@ export function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
       });
       onLogin(res.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Dang nhap that bai.");
+      setError(err instanceof Error ? err.message : "Đăng nhập thất bại.");
     }
   }
 
@@ -36,9 +36,9 @@ export function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
     <div className="login-page">
       <form className="login-card" onSubmit={submit}>
         <h1>eCN</h1>
-        <p>He thong quan ly Thong bao thay doi ban mem</p>
+        <p>Hệ thống quản lý Thông báo thay đổi bản mềm</p>
         <label>
-          Tai khoan
+          Tài khoản
           <select value={username} onChange={(event) => setUsername(event.target.value)}>
             {accounts.map(([value, label]) => (
               <option key={value} value={value}>
@@ -48,12 +48,12 @@ export function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
           </select>
         </label>
         <label>
-          Mat khau
+          Mật khẩu
           <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" />
         </label>
         {error && <div className="error">{error}</div>}
-        <button type="submit">Dang nhap</button>
-        <small>Mat khau demo: password123</small>
+        <button type="submit">Đăng nhập</button>
+        <small>Mật khẩu demo: password123</small>
       </form>
     </div>
   );

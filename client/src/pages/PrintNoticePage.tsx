@@ -19,52 +19,52 @@ export function PrintNoticePage({ id, navigate }: { id: string; navigate: (nav: 
       .catch((err) => setError(err.message));
   }, [id]);
 
-  if (!data) return <div>{error || "Dang tai ban in..."}</div>;
+  if (!data) return <div>{error || "Đang tải bản in..."}</div>;
   const { notice, signatures } = data;
 
   return (
     <div>
       <div className="print-toolbar">
-        <button onClick={() => navigate({ page: "detail", id })}>Quay lai</button>
-        <button onClick={() => window.print()}>In phieu</button>
+        <button onClick={() => navigate({ page: "detail", id })}>Quay lại</button>
+        <button onClick={() => window.print()}>In phiếu</button>
       </div>
       <article className="print-page">
         {data.statusMarker && <div className="watermark">{data.statusMarker}</div>}
         <header className="print-header">
           <small>NCPT/BM/019</small>
-          <h1>PHIEU THONG BAO THAY DOI</h1>
+          <h1>PHIẾU THÔNG BÁO THAY ĐỔI</h1>
           <h2>CHANGE NOTICE</h2>
-          <p>(Ve su doi noi dung trong du thao quy trinh pha che, du thao quy trinh dong goi)</p>
+          <p>(Về sự đổi nội dung trong dự thảo quy trình pha chế, dự thảo quy trình đóng gói)</p>
           <strong>NCPT</strong>
-          <p>Date ngay {new Date(notice.issuedDate).toLocaleDateString("vi-VN")}</p>
+          <p>Date ngày {new Date(notice.issuedDate).toLocaleDateString("vi-VN")}</p>
         </header>
         <section className="print-lines">
-          <p><b>Kinh gui/To:</b> {notice.recipient}</p>
-          <p><b>Nguoi de nghi thay doi/Proponent:</b> {notice.proposerName}</p>
-          <p><b>Bo phan/Dept:</b> {notice.proposerDepartment}</p>
-          <h3>1. Thong tin san pham / Product information</h3>
-          <p><b>Ten san pham/Product name:</b> {notice.productName}</p>
-          <p><b>Ma QTPC/QDG / Manufacturing process code:</b> {notice.manufacturingProcessCode}</p>
-          <p><b>Ngay ban hanh/Issued date:</b> {new Date(notice.issuedDate).toLocaleDateString("vi-VN")}</p>
-          <p><b>Lan ban hanh phieu thong bao/Notification issuance number:</b> {notice.notificationIssueNumber}</p>
-          <h3>2. Noi dung thay doi / Changes</h3>
+          <p><b>Kính gửi/To:</b> {notice.recipient}</p>
+          <p><b>Người đề nghị thay đổi/Proponent:</b> {notice.proposerName}</p>
+          <p><b>Bộ phận/Dept:</b> {notice.proposerDepartment}</p>
+          <h3>1. Thông tin sản phẩm / Product information</h3>
+          <p><b>Tên sản phẩm/Product name:</b> {notice.productName}</p>
+          <p><b>Mã QTPC/QĐG / Manufacturing process code:</b> {notice.manufacturingProcessCode}</p>
+          <p><b>Ngày ban hành/Issued date:</b> {new Date(notice.issuedDate).toLocaleDateString("vi-VN")}</p>
+          <p><b>Lần ban hành phiếu thông báo/Notification issuance number:</b> {notice.notificationIssueNumber}</p>
+          <h3>2. Nội dung thay đổi / Changes</h3>
           <p className="preline">{notice.changeContent}</p>
           <p className="effect-note">{notice.effectiveNote}</p>
         </section>
         <section className="signature-grid">
-          <Signature title="Nguoi de nghi" subtitle="Edited by / P. NCPT / R&D" step={signatures.editedBy} />
-          <Signature title="Nguoi kiem tra" subtitle="Reviewed by / TP. NCPT / Head of R&D" step={signatures.reviewedBy} />
-          <Signature title="Nguoi tham dinh" subtitle="Appraised by / TP.DBCL / Head of QA" step={signatures.appraisedBy} />
-          <Signature title="Nguoi phe duyet" subtitle="Approved by / GD. SAN XUAT / Production director" step={signatures.approvedBy} />
+          <Signature title="Người đề nghị" subtitle="Edited by / P. NCPT / R&D" step={signatures.editedBy} />
+          <Signature title="Người kiểm tra" subtitle="Reviewed by / TP. NCPT / Head of R&D" step={signatures.reviewedBy} />
+          <Signature title="Người thẩm định" subtitle="Appraised by / TP.DBCL / Head of QA" step={signatures.appraisedBy} />
+          <Signature title="Người phê duyệt" subtitle="Approved by / GĐ. SẢN XUẤT / Production director" step={signatures.approvedBy} />
         </section>
         <table className="print-table">
           <thead>
             <tr>
               <th>TT / No</th>
-              <th>Ban so / Version</th>
-              <th>Noi nhan / Distributed unit</th>
-              <th>Ky ten / Signature</th>
-              <th>Ghi chu / Notes</th>
+              <th>Bản số / Version</th>
+              <th>Nơi nhận / Distributed unit</th>
+              <th>Ký tên / Signature</th>
+              <th>Ghi chú / Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -97,7 +97,7 @@ function Signature({ title, subtitle, step }: { title: string; subtitle: string;
             <small>{step.signatureMeaning}</small>
           </>
         ) : (
-          <span>Chua ky</span>
+          <span>Chưa ký</span>
         )}
       </div>
     </div>

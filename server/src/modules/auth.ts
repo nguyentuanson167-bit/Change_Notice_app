@@ -39,14 +39,14 @@ export function serializeUser(user: NonNullable<AuthedUser>) {
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session.userId) {
-    res.status(401).json({ message: "Ban can dang nhap." });
+    res.status(401).json({ message: "Bạn cần đăng nhập." });
     return;
   }
 
   const user = await getUserById(req.session.userId);
   if (!user || !user.active) {
     req.session.destroy(() => undefined);
-    res.status(401).json({ message: "Tai khoan khong kha dung." });
+    res.status(401).json({ message: "Tài khoản không khả dụng." });
     return;
   }
 
@@ -60,7 +60,7 @@ export function requireRole(...roles: string[]) {
     const user = res.locals.user as NonNullable<AuthedUser> | undefined;
     const userRoles = user?.roles.map((item) => item.role.code) ?? [];
     if (!roles.some((role) => userRoles.includes(role))) {
-      res.status(403).json({ message: "Ban khong co quyen thuc hien thao tac nay." });
+      res.status(403).json({ message: "Bạn không có quyền thực hiện thao tác này." });
       return;
     }
     next();
@@ -74,7 +74,7 @@ export function currentUser(res: Response) {
 authRouter.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Thong tin dang nhap khong hop le." });
+    res.status(400).json({ message: "Thông tin đăng nhập không hợp lệ." });
     return;
   }
 
@@ -84,13 +84,13 @@ authRouter.post("/login", async (req, res) => {
   });
 
   if (!user || !user.active) {
-    res.status(401).json({ message: "Sai tai khoan hoac mat khau." });
+    res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu." });
     return;
   }
 
   const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
   if (!ok) {
-    res.status(401).json({ message: "Sai tai khoan hoac mat khau." });
+    res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu." });
     return;
   }
 
