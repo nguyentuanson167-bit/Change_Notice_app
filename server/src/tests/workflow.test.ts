@@ -102,4 +102,30 @@ describe("workflow", () => {
     expect(headSigned.status).toBe(200);
     expect(headSigned.body.notice.status).toBe("PENDING_QA_DEPUTY");
   });
+
+  it("scopes research staff create edit and submit by dosage workshop", async () => {
+    const nonSterileAuthor = await login("author");
+    const wrongCreate = await nonSterileAuthor.post("/api/notices").send({
+      ...noticePayload(`wrong-author-${Date.now()}`),
+      workshopType: "STERILE"
+    });
+    expect(wrongCreate.status).toBe(403);
+
+    const create = await nonSterileAuthor.post("/api/notices").send({
+      ...noticePayload(`right-author-${Date.now()}`),
+      workshopType: "NON_STERILE"
+    });
+    expect(create.status).toBe(201);
+    const id = create.body.notice.id;
+
+    const switchWorkshop = await nonSterileAuthor.put(`/api/notices/${id}`).send({ workshopType: "STERILE" });
+    expect(switchWorkshop.status).toBe(403);
+
+    const sterileAuthor = await login("author2");
+    const wrongSubmit = await sterileAuthor.post(`/api/notices/${id}/submit`).send();
+    expect(wrongSubmit.status).toBe(403);
+
+    const submit = await nonSterileAuthor.post(`/api/notices/${id}/submit`).send();
+    expect(submit.status).toBe(200);
+  });
 });

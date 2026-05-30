@@ -43,6 +43,13 @@ const upload = multer({
 
 export const attachmentRouter = Router();
 
+function canAuthorForWorkshop(roles: string[], workshopType: string) {
+  if (roles.includes("ADMIN")) return true;
+  if (workshopType === "STERILE") return roles.includes("AUTHOR_STERILE");
+  if (workshopType === "NON_STERILE") return roles.includes("AUTHOR_NON_STERILE");
+  return false;
+}
+
 attachmentRouter.use(requireAuth);
 
 attachmentRouter.get("/notices/:id/attachments", async (req, res) => {
@@ -71,6 +78,10 @@ attachmentRouter.post("/notices/:id/attachments", upload.single("file"), async (
   }
   if (notice.authorId !== user.id && !user.roles.includes("ADMIN")) {
     res.status(403).json({ message: "Chỉ người soạn được đính kèm file." });
+    return;
+  }
+  if (!canAuthorForWorkshop(user.roles, notice.workshopType)) {
+    res.status(403).json({ message: "Bạn chỉ được đính kèm tài liệu cho TBTĐ thuộc dạng bào chế/xưởng mình phụ trách." });
     return;
   }
 

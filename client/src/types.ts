@@ -1,5 +1,7 @@
 export type RoleCode =
   | "AUTHOR"
+  | "AUTHOR_STERILE"
+  | "AUTHOR_NON_STERILE"
   | "NCPT_LEAD_NON_STERILE"
   | "NCPT_LEAD_STERILE"
   | "NCPT_HEAD"

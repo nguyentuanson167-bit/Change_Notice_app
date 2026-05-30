@@ -3,7 +3,8 @@ import { prisma } from "../server/src/db";
 import { DEMO_PASSWORD } from "../server/src/seedPasswords";
 
 const roles = [
-  ["AUTHOR", "Nhân viên NCPT"],
+  ["AUTHOR_STERILE", "Nhân viên nghiên cứu vô trùng"],
+  ["AUTHOR_NON_STERILE", "Nhân viên nghiên cứu không vô trùng"],
   ["NCPT_LEAD_NON_STERILE", "Tổ trưởng NCPT xưởng không vô trùng"],
   ["NCPT_LEAD_STERILE", "Tổ trưởng NCPT xưởng vô trùng"],
   ["NCPT_HEAD", "Trưởng phòng NCPT"],
@@ -15,8 +16,8 @@ const roles = [
 ] as const;
 
 const users = [
-  ["author", "Nguyễn Văn Anh", "author@vinphaco.local", "Phòng NCPT / R&D", "NON_STERILE", ["AUTHOR"]],
-  ["author2", "Trần Thị Bình", "author2@vinphaco.local", "Phòng NCPT / R&D", "STERILE", ["AUTHOR"]],
+  ["author", "Nguyễn Văn Anh", "author@vinphaco.local", "Phòng NCPT / R&D", "NON_STERILE", ["AUTHOR_NON_STERILE"]],
+  ["author2", "Trần Thị Bình", "author2@vinphaco.local", "Phòng NCPT / R&D", "STERILE", ["AUTHOR_STERILE"]],
   ["lead", "Lê Văn Cường", "lead@vinphaco.local", "Phòng NCPT / R&D", "NON_STERILE", ["NCPT_LEAD_NON_STERILE"]],
   ["lead-sterile", "Mai Thị Hạnh", "lead-sterile@vinphaco.local", "Phòng NCPT / R&D", "STERILE", ["NCPT_LEAD_STERILE"]],
   ["ncpt-head", "Vũ Minh Khoa", "ncpt-head@vinphaco.local", "Phòng NCPT / R&D", "ALL", ["NCPT_HEAD"]],
@@ -67,6 +68,7 @@ async function main() {
     });
     userByUsername.set(username, user.id);
 
+    await prisma.userRole.deleteMany({ where: { userId: user.id } });
     for (const code of userRoles) {
       const roleId = roleByCode.get(code);
       if (!roleId) throw new Error(`Missing role ${code}`);
@@ -79,6 +81,7 @@ async function main() {
   }
 
   const authorId = userByUsername.get("author")!;
+  const sterileAuthorId = userByUsername.get("author2")!;
   const leadId = userByUsername.get("lead")!;
   const sterileLeadId = userByUsername.get("lead-sterile")!;
   const qaDeputyId = userByUsername.get("qa-deputy")!;
@@ -116,7 +119,7 @@ async function main() {
       {
         noticeId: pending.id,
         sequence: 1,
-        requiredRole: "AUTHOR",
+        requiredRole: "AUTHOR_NON_STERILE",
         action: "SUBMITTED",
         signerId: authorId,
         signatureMeaning: "Đã soạn và gửi"
@@ -140,7 +143,7 @@ async function main() {
     where: { code: "TBTD-NCPT-2026-0003" },
     update: {},
     create: {
-      ...noticeBase(authorId, "STERILE"),
+      ...noticeBase(sterileAuthorId, "STERILE"),
       code: "TBTD-NCPT-2026-0003",
       title: "Cập nhật quy trình đóng gói thành phẩm",
       changeContent:
@@ -150,7 +153,7 @@ async function main() {
   });
 
   const approvedSteps = [
-      ["AUTHOR", "SUBMITTED", authorId, "Đã soạn và gửi"],
+      ["AUTHOR_STERILE", "SUBMITTED", sterileAuthorId, "Đã soạn và gửi"],
       ["NCPT_LEAD_STERILE", "SIGNED", sterileLeadId, "Đã kiểm tra và xác nhận"],
       ["QA_DEPUTY", "SIGNED", qaDeputyId, "Đã thẩm định"],
       ["QA_HEAD", "SIGNED", qaHeadId, "Đã phê duyệt cấp phòng QA"],

@@ -52,10 +52,15 @@ async function nextCode() {
   return `TBTD-NCPT-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
-function canCreateForWorkshop(user: ReturnType<typeof currentUser>, workshopType: string) {
+function canAuthorForWorkshop(user: ReturnType<typeof currentUser>, workshopType: string) {
   if (user.roles.includes("ADMIN")) return true;
-  if (!user.roles.includes("AUTHOR")) return false;
-  return user.workshopType === workshopType;
+  if (workshopType === "STERILE") return user.roles.includes("AUTHOR_STERILE");
+  if (workshopType === "NON_STERILE") return user.roles.includes("AUTHOR_NON_STERILE");
+  return false;
+}
+
+function getAuthorRole(workshopType: string) {
+  return normalizeWorkshopType(workshopType) === "STERILE" ? "AUTHOR_STERILE" : "AUTHOR_NON_STERILE";
 }
 
 function queueWhere(user: ReturnType<typeof currentUser>) {
@@ -160,13 +165,13 @@ changeNoticeRouter.post("/", async (req, res) => {
     return;
   }
   const user = currentUser(res);
-  if (!user.roles.includes("AUTHOR") && !user.roles.includes("ADMIN")) {
+  if (!user.roles.some((role) => ["AUTHOR_STERILE", "AUTHOR_NON_STERILE", "AUTHOR"].includes(role)) && !user.roles.includes("ADMIN")) {
     res.status(403).json({ message: "Chỉ người soạn hoặc admin được tạo TBTĐ." });
     return;
   }
   const workshopType = normalizeWorkshopType(parsed.data.workshopType, user.workshopType === "STERILE" ? "STERILE" : "NON_STERILE");
-  if (!canCreateForWorkshop(user, workshopType)) {
-    res.status(403).json({ message: "Nhân viên NCPT chỉ được tạo TBTĐ cho xưởng mình phụ trách." });
+  if (!canAuthorForWorkshop(user, workshopType)) {
+    res.status(403).json({ message: "Nhân viên nghiên cứu chỉ được tạo TBTĐ cho dạng bào chế/xưởng mình phụ trách." });
     return;
   }
   const notice = await prisma.changeNotification.create({
@@ -206,7 +211,12 @@ changeNoticeRouter.put("/:id", async (req, res) => {
     res.status(403).json({ message: "Bạn chỉ được sửa TBTĐ của mình." });
     return;
   }
-  if (parsed.data.workshopType && !canCreateForWorkshop(user, parsed.data.workshopType)) {
+  const targetWorkshop = parsed.data.workshopType ?? before.workshopType;
+  if (!canAuthorForWorkshop(user, targetWorkshop)) {
+    res.status(403).json({ message: "Bạn chỉ được chỉnh sửa TBTĐ thuộc dạng bào chế/xưởng mình phụ trách." });
+    return;
+  }
+  if (parsed.data.workshopType && !canAuthorForWorkshop(user, parsed.data.workshopType)) {
     res.status(403).json({ message: "Bạn không được chuyển TBTĐ sang xưởng ngoài phạm vi phụ trách." });
     return;
   }
@@ -233,6 +243,10 @@ changeNoticeRouter.post("/:id/submit", async (req, res) => {
     res.status(403).json({ message: "Chỉ người soạn được gửi TBTĐ." });
     return;
   }
+  if (!canAuthorForWorkshop(user, before.workshopType)) {
+    res.status(403).json({ message: "Bạn chỉ được nộp TBTĐ thuộc dạng bào chế/xưởng mình phụ trách." });
+    return;
+  }
   if (!["DRAFT", "RETURNED", "RECALLED"].includes(before.status)) {
     res.status(409).json({ message: "Trạng thái hiện tại không cho phép gửi." });
     return;
@@ -246,7 +260,7 @@ changeNoticeRouter.post("/:id/submit", async (req, res) => {
     data: {
       noticeId: notice.id,
       sequence: notice.workflowSteps.length + 1,
-      requiredRole: "AUTHOR",
+      requiredRole: getAuthorRole(before.workshopType),
       action: "SUBMITTED",
       signerId: user.id,
       signatureMeaning: "Đã soạn và gửi"

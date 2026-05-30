@@ -10,7 +10,7 @@ describe("auth", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.user.username).toBe("author");
-    expect(res.body.user.roles).toContain("AUTHOR");
+    expect(res.body.user.roles).toContain("AUTHOR_NON_STERILE");
   });
 
   it("rejects invalid credentials", async () => {
