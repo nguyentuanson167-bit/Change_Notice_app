@@ -60,6 +60,7 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
 
   async function addAnnotation() {
     if (!annotation.trim()) return;
+    setError("");
     await api(`/api/notices/${id}/annotations`, {
       method: "POST",
       body: JSON.stringify({
@@ -68,6 +69,7 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
         pageNumber: selectedAttachment ? 1 : undefined,
         x: markerDraft?.x,
         y: markerDraft?.y,
+        referenceText: markerDraft ? `Ghim tại X ${markerDraft.x}%, Y ${markerDraft.y}%` : undefined,
         content: annotation,
         severity: "REQUIRED"
       })
@@ -95,6 +97,9 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
   const canSubmit = ["DRAFT", "RETURNED", "RECALLED"].includes(notice.status) && notice.authorId === user.id;
   const canEdit = canSubmit || user.roles.includes("ADMIN");
   const canSign = notice.currentAssigneeRole && user.roles.includes(notice.currentAssigneeRole);
+  const selectedAnnotations = selectedAttachment
+    ? notice.annotations.filter((item) => item.attachmentId === selectedAttachment.id)
+    : notice.annotations.filter((item) => !item.attachmentId);
 
   return (
     <div>
@@ -180,13 +185,34 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
           <input value={annotation} onChange={(event) => setAnnotation(event.target.value)} placeholder="Nhập ghi chú/hướng dẫn sửa..." />
           <button onClick={addAnnotation}>Thêm ghi chú</button>
         </div>
-        {notice.annotations.map((item) => (
-          <div className="note" key={item.id}>
-            <strong>{item.severity} - {item.status}</strong>
-            <p>{item.content}</p>
-            <small>{item.creator?.name} - {new Date(item.createdAt).toLocaleString("vi-VN")}</small>
-          </div>
-        ))}
+        {markerDraft && (
+          <p className="hint">Ghim mới đang đặt tại X {markerDraft.x}%, Y {markerDraft.y}%. Nhập nội dung rồi bấm Thêm ghi chú.</p>
+        )}
+        {selectedAttachment && (
+          <h3>Ghi chú trên file đang chọn</h3>
+        )}
+        {selectedAnnotations.length === 0 && <p className="hint">Chưa có ghi chú cho tài liệu đang chọn.</p>}
+        {selectedAnnotations.map((item) => {
+          const markerNumber = typeof item.x === "number" && typeof item.y === "number"
+            ? selectedAnnotations.filter((candidate) => typeof candidate.x === "number" && typeof candidate.y === "number").findIndex((candidate) => candidate.id === item.id) + 1
+            : null;
+          return (
+            <div className="note" key={item.id}>
+              <strong>
+                {markerNumber ? `Ghim ${markerNumber}` : "Ghi chú"}
+                {" · "}{item.severity} - {item.status}
+              </strong>
+              <p>{item.content}</p>
+              {markerNumber && (
+                <small>Vị trí: X {item.x}%, Y {item.y}%</small>
+              )}
+              <small>{item.creator?.name} - {new Date(item.createdAt).toLocaleString("vi-VN")}</small>
+            </div>
+          );
+        })}
+        {!selectedAttachment && notice.annotations.filter((item) => item.attachmentId).length > 0 && (
+          <p className="hint">Chọn một tài liệu đính kèm để xem các ghi chú gắn trực tiếp với file đó.</p>
+        )}
       </section>
       <section className="panel">
           <h2>Lượt ký</h2>
@@ -235,13 +261,48 @@ function AttachmentPreview({
   draft: { x: number; y: number } | null;
   onMark: (event: React.MouseEvent<HTMLDivElement>) => void;
 }) {
+  const [docHtml, setDocHtml] = useState("");
+  const [docStatus, setDocStatus] = useState("");
+  const url = attachment ? `/uploads/${attachment.path}` : "";
+  const fileName = attachment?.fileName.toLowerCase() ?? "";
+  const isPdf = Boolean(attachment && (fileName.endsWith(".pdf") || attachment.mimeType.includes("pdf")));
+  const isDocx = Boolean(attachment && (fileName.endsWith(".docx") || attachment.mimeType.includes("wordprocessingml")));
+  const marks = attachment
+    ? annotations.filter((item) => item.attachmentId === attachment.id && typeof item.x === "number" && typeof item.y === "number")
+    : [];
+
+  useEffect(() => {
+    let cancelled = false;
+    setDocHtml("");
+    setDocStatus("");
+
+    if (!attachment || !isDocx) return;
+
+    setDocStatus("Đang dựng preview DOCX...");
+    fetch(url)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Không tải được file DOCX.");
+        const arrayBuffer = await response.arrayBuffer();
+        const mammoth = (await import("mammoth")).default;
+        return mammoth.convertToHtml({ arrayBuffer }, { convertImage: mammoth.images.dataUri });
+      })
+      .then((result) => {
+        if (cancelled) return;
+        setDocHtml(result.value || "<p>Tài liệu không có nội dung đọc được.</p>");
+        setDocStatus(result.messages.length ? "Preview DOCX có thể khác nhẹ so với Word gốc." : "");
+      })
+      .catch((err) => {
+        if (!cancelled) setDocStatus(err instanceof Error ? err.message : "Không preview được file DOCX.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [attachment, isDocx, url]);
+
   if (!attachment) {
     return <div className="attachment-preview empty">Chọn một tài liệu để xem trước.</div>;
   }
-
-  const url = `/uploads/${attachment.path}`;
-  const isPdf = attachment.fileName.toLowerCase().endsWith(".pdf") || attachment.mimeType.includes("pdf");
-  const marks = annotations.filter((item) => item.attachmentId === attachment.id && typeof item.x === "number" && typeof item.y === "number");
 
   return (
     <div className="attachment-preview">
@@ -251,18 +312,34 @@ function AttachmentPreview({
       </div>
       {isPdf ? (
         <div className="pdf-preview">
-          <object data={url} type="application/pdf">
-            <iframe src={url} title={attachment.fileName} />
-          </object>
+          <iframe src={`${url}#toolbar=1&navpanes=0&view=FitH`} title={attachment.fileName} />
           <div className="annotation-layer" onClick={onMark}>
-            {marks.map((mark) => (
+            {marks.map((mark, index) => (
               <span
                 key={mark.id}
                 className="annotation-pin"
                 style={{ left: `${mark.x}%`, top: `${mark.y}%` }}
                 title={mark.content}
               >
-                {mark.status === "RESOLVED" ? "✓" : "!"}
+                {index + 1}
+              </span>
+            ))}
+            {draft && <span className="annotation-pin draft" style={{ left: `${draft.x}%`, top: `${draft.y}%` }}>+</span>}
+          </div>
+        </div>
+      ) : isDocx ? (
+        <div className="docx-preview" onClick={onMark}>
+          {docStatus && <p className="hint">{docStatus}</p>}
+          <div className="docx-page" dangerouslySetInnerHTML={{ __html: docHtml }} />
+          <div className="annotation-layer">
+            {marks.map((mark, index) => (
+              <span
+                key={mark.id}
+                className="annotation-pin"
+                style={{ left: `${mark.x}%`, top: `${mark.y}%` }}
+                title={mark.content}
+              >
+                {index + 1}
               </span>
             ))}
             {draft && <span className="annotation-pin draft" style={{ left: `${draft.x}%`, top: `${draft.y}%` }}>+</span>}
@@ -270,7 +347,7 @@ function AttachmentPreview({
         </div>
       ) : (
         <div className="word-preview">
-          <p>File Word chưa xem trực tiếp trong trình duyệt. Bạn có thể tải/mở file để in, và ghi chú bằng trang/mục/dòng tham chiếu ở ô ghi chú.</p>
+          <p>File .doc cũ chưa preview trực tiếp ổn định trên trình duyệt. Hãy mở file gốc để xem/in; nếu cần preview web, lưu lại thành .docx rồi tải lên.</p>
           <a href={url} target="_blank" rel="noreferrer">Tải hoặc mở tài liệu Word</a>
         </div>
       )}

@@ -1227,9 +1227,13 @@ The following fixes were added after initial MVP implementation:
   - Approved/distributed notices show `Tạo bản sửa đổi` and require a revision reason.
 - Improve attachments:
   - Detail page includes an attachment list plus a PDF preview panel.
-  - PDF preview supports placing annotation markers by clicking directly on the preview area.
+  - DOCX attachments are rendered to browser HTML preview using Mammoth.
+  - PDF and DOCX previews support placing numbered annotation markers by clicking directly on the preview area.
   - Annotation markers are stored with attachment id and relative x/y coordinates.
-  - Word attachments show an open/download path plus reference-text annotation guidance.
+  - The note list shows matching marker numbers and coordinates so users can identify which note belongs to which position.
+  - Legacy DOC attachments show an open/download path plus reference-text annotation guidance.
+- Move form action buttons below the attachment block so the edit flow reads: form fields, attachments, then save/submit/detail actions.
+- Add the QA Deputy / Phó phòng ĐBCL signature slot to the printed Change Notice template.
 - Verification for this follow-up:
   - Run `npm run test`.
   - Run `npm run build`.

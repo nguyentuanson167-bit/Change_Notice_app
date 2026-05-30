@@ -24,13 +24,14 @@ printingRouter.get("/notices/:id/print-data", async (req, res) => {
   const signatures = {
     editedBy: notice.workflowSteps.find((step) => step.requiredRole === "AUTHOR"),
     reviewedBy: notice.workflowSteps.find((step) => step.requiredRole === "NCPT_LEAD"),
-    appraisedBy: notice.workflowSteps.find((step) => step.requiredRole === "QA_HEAD" || step.requiredRole === "QA_DEPUTY"),
+    qaDeputyBy: notice.workflowSteps.find((step) => step.requiredRole === "QA_DEPUTY"),
+    appraisedBy: notice.workflowSteps.find((step) => step.requiredRole === "QA_HEAD"),
     approvedBy: notice.workflowSteps.find((step) => step.requiredRole === "PROD_DIRECTOR")
   };
 
   res.json({
     notice,
     signatures,
-    statusMarker: ["DISTRIBUTED", "APPROVED"].includes(notice.status) ? null : `BAN CHUA HOAN TAT - ${notice.status}`
+    statusMarker: ["DISTRIBUTED", "APPROVED"].includes(notice.status) ? null : `BẢN CHƯA HOÀN TẤT - ${notice.status}`
   });
 });

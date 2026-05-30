@@ -304,6 +304,17 @@ th {
   margin-bottom: 1rem;
 }
 
+.attachment-upload-panel {
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  padding: 0.85rem;
+  background: #f8fafd;
+}
+
+.attachment-upload-panel h2 {
+  margin-top: 0;
+}
+
 .wide {
   grid-column: 1 / -1;
 }
@@ -392,38 +403,67 @@ th {
   background: #ffffff;
 }
 
-.pdf-preview {
+.pdf-preview,
+.docx-preview {
   position: relative;
   min-height: 620px;
   background: #eef2f8;
 }
 
-.pdf-preview object,
 .pdf-preview iframe {
   width: 100%;
   height: 620px;
   border: 0;
 }
 
+.docx-preview {
+  padding: 1rem;
+  cursor: crosshair;
+  overflow: auto;
+}
+
+.docx-page {
+  min-height: 560px;
+  background: #ffffff;
+  border: 1px solid #d8dee9;
+  border-radius: 6px;
+  padding: 1.25rem;
+  line-height: 1.55;
+  color: #1c2433;
+}
+
+.docx-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.docx-page p {
+  margin: 0 0 0.7rem;
+}
+
 .annotation-layer {
   position: absolute;
   inset: 0;
   cursor: crosshair;
+  z-index: 2;
 }
 
 .annotation-pin {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 0.35rem;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
+  border-radius: 999px;
   background: #c02626;
   color: #ffffff;
   display: grid;
   place-items: center;
   font-weight: 800;
+  font-size: 0.82rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   pointer-events: auto;
+  border: 2px solid #ffffff;
 }
 
 .annotation-pin.draft {
@@ -433,6 +473,10 @@ th {
 .hint {
   color: #5a6578;
   margin-top: 0;
+}
+
+.note strong {
+  color: #20385f;
 }
 
 .distribution-row {
@@ -475,10 +519,14 @@ th {
 
 .signature-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
   text-align: center;
   margin: 1rem 0;
+}
+
+.signature-grid h3 {
+  font-size: 0.95rem;
 }
 
 .signature-box {

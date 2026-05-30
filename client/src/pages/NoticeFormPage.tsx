@@ -117,22 +117,26 @@ export function NoticeFormPage({ id, navigate }: { id?: string; navigate: (nav: 
             )}
           </label>
         ))}
+        <section className="wide attachment-upload-panel">
+          <h2>Đính kèm tài liệu</h2>
+          {notice ? (
+            <>
+              <input type="file" accept=".pdf,.doc,.docx" onChange={(event) => upload(event.target.files)} />
+              <p className="hint">Sau khi tải lên, mở trang chi tiết để xem trước PDF/DOCX, in file gốc và ghi chú trực tiếp trên tài liệu.</p>
+              <ul>
+                {files.map((file) => <li key={file.id}>{file.fileName} - {Math.round(file.size / 1024)} KB</li>)}
+              </ul>
+            </>
+          ) : (
+            <p className="hint">Lưu bản nháp trước, sau đó app sẽ cho phép đính kèm tài liệu vào phiếu này.</p>
+          )}
+        </section>
         <div className="wide actions">
           <button type="submit">{isEditing ? "Lưu thay đổi" : "Lưu bản nháp"}</button>
           {notice && <button type="button" onClick={submitNotice}>Gửi đi</button>}
           {notice && <button type="button" onClick={() => navigate({ page: "detail", id: notice.id })}>Xem chi tiết</button>}
         </div>
       </form>
-      {notice && (
-        <section className="panel">
-          <h2>Đính kèm tài liệu</h2>
-          <input type="file" accept=".pdf,.doc,.docx" onChange={(event) => upload(event.target.files)} />
-          <p className="hint">Sau khi tải lên, mở trang chi tiết để xem trước PDF, in file gốc và ghi chú trực tiếp trên tài liệu.</p>
-          <ul>
-            {files.map((file) => <li key={file.id}>{file.fileName} - {Math.round(file.size / 1024)} KB</li>)}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

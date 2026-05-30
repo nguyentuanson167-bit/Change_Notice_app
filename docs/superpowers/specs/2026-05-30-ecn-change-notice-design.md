@@ -221,9 +221,9 @@ Delegation for absent signers is a production upgrade point. The MVP stores enou
 
 ## Attachments
 
-The MVP accepts PDF and Word files and stores them locally. The backend calculates a checksum and records file metadata. PDF preview is shown in the detail screen with a browser-native PDF viewer. Word files are downloadable/openable because browser preview is not reliable without a document conversion service.
+The MVP accepts PDF and Word files and stores them locally. The backend calculates a checksum and records file metadata. PDF preview is shown in the detail screen with a browser-native PDF viewer. DOCX attachments are converted to HTML in the browser for preview, while legacy DOC files remain downloadable/openable because reliable browser preview requires a document conversion service.
 
-Annotation is stored separately from the original file so the uploaded document remains unchanged. For PDF attachments, users can click directly on the preview area to place an annotation marker with relative x/y coordinates, then enter the comment or correction instruction. Existing markers are shown on the preview. For Word attachments, users add notes by page/section/reference text and open the file externally.
+Annotation is stored separately from the original file so the uploaded document remains unchanged. For PDF and DOCX attachments, users can click directly on the preview area to place a numbered annotation marker with relative x/y coordinates, then enter the comment or correction instruction. Existing markers are shown on the preview and the note list uses matching marker numbers so users can identify which note belongs to which position. For legacy DOC attachments, users add notes by page/section/reference text and open the file externally.
 
 Chunked upload and resume are documented as production upgrade points. The MVP will use normal multipart upload with progress on the client.
 
@@ -244,7 +244,7 @@ The app must make the correction path explicit:
 The MVP includes two print functions:
 
 - `In phiếu TBTĐ`: opens a print preview page for the bilingual Change Notice form. The template includes header, product information, change content, electronic signature block, and distribution table. Browser print is the MVP output path.
-- `In tài liệu đính kèm`: lets users open or download attachments for printing. PDF attachments open in browser preview with a print button. Word attachments are downloaded for printing in Word or a compatible viewer.
+- `In tài liệu đính kèm`: lets users open or download attachments for printing. PDF attachments open in browser preview with a print button. DOCX attachments can be previewed on the detail page and opened/downloaded for final printing. Legacy DOC attachments are downloaded for printing in Word or a compatible viewer.
 
 Approved notices display the electronic signer name, role, timestamp, and signature meaning in the signature block. Draft or pending notices print with a visible non-final status marker so they are not mistaken for a controlled approved copy.
 
@@ -255,10 +255,10 @@ The MVP does not merge all attachments into one generated PDF. That is a product
 The MVP supports:
 
 - General TBTD comments.
-- File-linked annotations with page number, optional x/y coordinates, severity, status, and threaded replies.
+- File-linked annotations with page number, optional x/y coordinates, severity, status, marker number in the UI, and threaded replies.
 - Open/resolved status so returned TBTDs can show unresolved items to the author.
 
-The UI will simulate PDF-position annotation using a page/reference panel rather than a full PDF drawing engine in the first pass.
+The UI stores position annotations as an overlay with relative x/y coordinates. The MVP does not permanently draw those notes into the original PDF/DOCX file; exporting annotated copies is a later production upgrade.
 
 ## Audit Trail
 

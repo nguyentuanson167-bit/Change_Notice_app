@@ -54,7 +54,8 @@ export function PrintNoticePage({ id, navigate }: { id: string; navigate: (nav: 
         <section className="signature-grid">
           <Signature title="Người đề nghị" subtitle="Edited by / P. NCPT / R&D" step={signatures.editedBy} />
           <Signature title="Người kiểm tra" subtitle="Reviewed by / TP. NCPT / Head of R&D" step={signatures.reviewedBy} />
-          <Signature title="Người thẩm định" subtitle="Appraised by / TP.DBCL / Head of QA" step={signatures.appraisedBy} />
+          <Signature title="Phó phòng ĐBCL" subtitle="QA Deputy / Deputy Head of QA" step={signatures.qaDeputyBy} />
+          <Signature title="Người thẩm định" subtitle="Appraised by / TP.ĐBCL / Head of QA" step={signatures.appraisedBy} />
           <Signature title="Người phê duyệt" subtitle="Approved by / GĐ. SẢN XUẤT / Production director" step={signatures.approvedBy} />
         </section>
         <table className="print-table">
