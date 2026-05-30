@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../prisma/dev.db"
+}
+
+model User {
+  id               String         @id @default(cuid())
+  username         String         @unique
+  name             String
+  email            String         @unique
+  passwordHash     String
+  department       String
+  active           Boolean        @default(true)
+  roles            UserRole[]
+  authored         ChangeNotification[] @relation("AuthorNotices")
+  workflowSteps    WorkflowStep[]
+  auditLogs        AuditLog[]
+  annotations      Annotation[]
+  replies          AnnotationReply[]
+  acknowledgements Distribution[] @relation("DistributionAckUser")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Role {
+  id    String     @id @default(cuid())
+  code  String     @unique
+  name  String
+  users UserRole[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model ChangeNotification {
+  id                       String   @id @default(cuid())
+  code                     String   @unique
+  title                    String
+  recipient                String
+  proposerName             String
+  proposerDepartment       String
+  productName              String
+  manufacturingProcessCode String
+  issuedDate               DateTime
+  notificationIssueNumber  String
+  changeType               String
+  impactLevel              String
+  changeContent            String
+  effectiveNote            String
+  status                   String   @default("DRAFT")
+  currentAssigneeRole      String?
+  authorId                 String
+  author                   User     @relation("AuthorNotices", fields: [authorId], references: [id])
+  revision                 Int      @default(0)
+  originalNoticeId         String?
+  originalNotice           ChangeNotification?  @relation("RevisionChain", fields: [originalNoticeId], references: [id])
+  revisions                ChangeNotification[] @relation("RevisionChain")
+  attachments              Attachment[]
+  workflowSteps            WorkflowStep[]
+  annotations              Annotation[]
+  distributions            Distribution[]
+  auditLogs                AuditLog[]
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+model Attachment {
+  id        String             @id @default(cuid())
+  noticeId  String
+  notice    ChangeNotification @relation(fields: [noticeId], references: [id])
+  fileName  String
+  mimeType  String
+  category  String
+  size      Int
+  checksum  String
+  path      String
+  version   Int                @default(1)
+  createdAt DateTime           @default(now())
+}
+
+model WorkflowStep {
+  id               String             @id @default(cuid())
+  noticeId         String
+  notice           ChangeNotification @relation(fields: [noticeId], references: [id])
+  sequence         Int
+  requiredRole     String
+  action           String
+  signerId         String?
+  signer           User?              @relation(fields: [signerId], references: [id])
+  signatureMeaning String
+  returnReason     String?
+  createdAt        DateTime           @default(now())
+}
+
+model Annotation {
+  id            String             @id @default(cuid())
+  noticeId      String
+  notice        ChangeNotification @relation(fields: [noticeId], references: [id])
+  attachmentId  String?
+  type          String
+  pageNumber    Int?
+  x             Float?
+  y             Float?
+  referenceText String?
+  content       String
+  severity      String
+  status        String             @default("OPEN")
+  creatorId     String
+  creator       User               @relation(fields: [creatorId], references: [id])
+  replies       AnnotationReply[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model AnnotationReply {
+  id           String     @id @default(cuid())
+  annotationId String
+  annotation   Annotation @relation(fields: [annotationId], references: [id])
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id])
+  content      String
+  createdAt    DateTime   @default(now())
+}
+
+model Distribution {
+  id               String             @id @default(cuid())
+  noticeId         String
+  notice           ChangeNotification @relation(fields: [noticeId], references: [id])
+  receivingUnit    String
+  versionLabel     String
+  status           String             @default("SENT")
+  acknowledgedById String?
+  acknowledgedBy   User?              @relation("DistributionAckUser", fields: [acknowledgedById], references: [id])
+  acknowledgedAt   DateTime?
+  notes            String?
+  createdAt        DateTime           @default(now())
+}
+
+model AuditLog {
+  id         String              @id @default(cuid())
+  noticeId   String?
+  notice     ChangeNotification? @relation(fields: [noticeId], references: [id])
+  actorId    String?
+  actor      User?               @relation(fields: [actorId], references: [id])
+  entity     String
+  action     String
+  beforeJson String?
+  afterJson  String?
+  ip         String?
+  createdAt  DateTime            @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model BackupJob {
+  id        String   @id @default(cuid())
+  type      String
+  target    String
+  status    String
+  sizeBytes Int?
+  createdBy String?
+  createdAt DateTime @default(now())
+}
