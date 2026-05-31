@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
+import fs from "node:fs";
+import path from "node:path";
 import { prisma } from "../db.js";
 import { currentUser, requireAuth } from "./auth.js";
 import { writeAudit } from "./audit.js";
@@ -10,10 +12,12 @@ import {
   getDistributionUnits,
   getNcptLeadRole,
   getNextStatus,
+  getPendingStatusForRole,
   getWorkflowStep,
   normalizeWorkshopType,
   pendingStatusesForRoles
 } from "./workflow.js";
+import { attachmentRelativePath, deleteNoticeFolder, syncPrintableNoticeFile, uploadRoot } from "./noticeStorage.js";
 
 export const changeNoticeRouter = Router();
 
@@ -188,6 +192,7 @@ changeNoticeRouter.post("/", async (req, res) => {
     include: includeNotice()
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "CREATE", after: notice, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.status(201).json({ notice });
 });
 
@@ -229,6 +234,7 @@ changeNoticeRouter.put("/:id", async (req, res) => {
     include: includeNotice()
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "UPDATE", before, after: notice, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.json({ notice });
 });
 
@@ -271,6 +277,7 @@ changeNoticeRouter.delete("/:id", async (req, res) => {
     before,
     ip: req.ip
   });
+  deleteNoticeFolder(before.code);
   res.json({ notice: before });
 });
 
@@ -309,6 +316,7 @@ changeNoticeRouter.post("/:id/submit", async (req, res) => {
     }
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "SUBMIT", before, after: notice, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.json({ notice });
 });
 
@@ -358,6 +366,7 @@ changeNoticeRouter.post("/:id/sign", async (req, res) => {
     });
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: finalApproval ? "APPROVE_DISTRIBUTE" : "SIGN", before, after: notice, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.json({ notice });
 });
 
@@ -396,6 +405,61 @@ changeNoticeRouter.post("/:id/return", async (req, res) => {
     }
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "RETURN", before, after: { notice, reason }, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
+  res.json({ notice });
+});
+
+changeNoticeRouter.post("/:id/undo-last-action", async (req, res) => {
+  const user = currentUser(res);
+  const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id }, include: includeNotice() });
+  if (!before) {
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
+    return;
+  }
+
+  const latestStep = before.workflowSteps.at(-1);
+  if (!latestStep) {
+    res.status(409).json({ message: "Phiếu chưa có thao tác workflow để hoàn tác." });
+    return;
+  }
+  if (latestStep.signerId !== user.id && !user.roles.includes("ADMIN")) {
+    res.status(403).json({ message: "Chỉ người vừa thao tác hoặc Admin được hoàn tác bước cuối." });
+    return;
+  }
+
+  const pending = getPendingStatusForRole(latestStep.requiredRole, before.workshopType);
+  let target: { status: string; currentAssigneeRole: string | null | undefined } | undefined;
+  if (latestStep.action === "SUBMITTED") {
+    target = { status: "DRAFT", currentAssigneeRole: null };
+  } else if (latestStep.action === "SIGNED" || latestStep.action === "RETURNED" || latestStep.action === "APPROVED") {
+    target = pending;
+  }
+
+  if (!target) {
+    res.status(409).json({ message: "Thao tác cuối này chưa hỗ trợ hoàn tác." });
+    return;
+  }
+
+  const notice = await prisma.$transaction(async (tx) => {
+    if (latestStep.action === "APPROVED") {
+      await tx.distribution.deleteMany({ where: { noticeId: before.id } });
+    }
+    await tx.workflowStep.delete({ where: { id: latestStep.id } });
+    await tx.changeNotification.update({
+      where: { id: before.id },
+      data: {
+        status: target.status,
+        currentAssigneeRole: target.currentAssigneeRole
+      }
+    });
+    return tx.changeNotification.findUniqueOrThrow({
+      where: { id: before.id },
+      include: includeNotice()
+    });
+  });
+
+  await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "UNDO_LAST_WORKFLOW_ACTION", before, after: notice, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.json({ notice });
 });
 
@@ -420,6 +484,7 @@ changeNoticeRouter.post("/:id/recall", async (req, res) => {
     include: includeNotice()
   });
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "ChangeNotification", action: "RECALL", before, after: notice, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.json({ notice });
 });
 
@@ -463,6 +528,11 @@ changeNoticeRouter.post("/:id/revision", async (req, res) => {
       }
     });
     for (const attachment of original.attachments) {
+      const sourcePath = path.join(uploadRoot, attachment.path);
+      const copiedPath = attachmentRelativePath(copy.code, attachment.fileName);
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, path.join(uploadRoot, copiedPath));
+      }
       await tx.attachment.create({
         data: {
           noticeId: copy.id,
@@ -471,7 +541,7 @@ changeNoticeRouter.post("/:id/revision", async (req, res) => {
           category: attachment.category,
           size: attachment.size,
           checksum: attachment.checksum,
-          path: attachment.path,
+          path: copiedPath,
           version: attachment.version + 1
         }
       });
@@ -479,5 +549,6 @@ changeNoticeRouter.post("/:id/revision", async (req, res) => {
     return copy;
   });
   await writeAudit({ noticeId: revision.id, actorId: user.id, entity: "ChangeNotification", action: "CREATE_REVISION", before: original, after: revision, ip: req.ip });
+  await syncPrintableNoticeFile(revision.id);
   res.status(201).json({ notice: revision });
 });

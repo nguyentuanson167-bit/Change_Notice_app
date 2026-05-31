@@ -36,6 +36,17 @@ All demo accounts use password `password123`.
 - Create and edit accounts, departments, workshop scope, roles, and active status.
 - Delete TBTĐ records from the browse list or detail page.
 
+## File storage
+
+- Each TBTĐ has its own folder under `server/uploads/<TBTĐ code>/`.
+- The folder contains `Thong_bao_thay_doi.html` plus uploaded PDF/DOC/DOCX attachments.
+- The detail page links directly to the stored print HTML file.
+
+## Workflow undo
+
+- The detail page shows `Hoàn tác thao tác vừa làm` when the logged-in user performed the latest workflow action.
+- Admin can also undo the latest workflow action for a notice.
+
 ## MVP limitations
 
 - Upload is multipart with progress, not chunked/resumable.

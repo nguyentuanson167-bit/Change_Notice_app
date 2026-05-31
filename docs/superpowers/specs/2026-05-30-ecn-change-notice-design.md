@@ -74,6 +74,7 @@ The frontend owns UI state and navigation. The backend owns all workflow transit
 - Attachment print/download panel for printing individual attachments or the full attachment set.
 - My Queue page for items awaiting the current user's signature.
 - Admin/demo data page for users, roles, departments, workflow template, and simulated backup jobs.
+- Detail action to undo the latest workflow action when performed by the current user or by Admin.
 
 ## Workshop Scope
 
@@ -159,6 +160,19 @@ Main entities:
 - `AuditLog`: append-only event log with actor, entity, action, before/after JSON, IP/user agent metadata where available.
 - `Notification`: in-app notifications.
 - `BackupJob`: simulated backup/restore records for MVP visibility.
+
+## Storage Layout
+
+Each TBTĐ stores its controlled files in a dedicated folder:
+
+`server/uploads/<TBTĐ code>/`
+
+The folder contains:
+
+- `Thong_bao_thay_doi.html`: generated printable Change Notice file.
+- Uploaded PDF/DOC/DOCX attachments for that TBTĐ.
+
+The printable file is regenerated when the notice is created, edited, submitted, signed, returned, recalled, revised, or when an attachment is uploaded. This prevents files from being scattered directly under the upload root.
 
 ## Change Notice Form Fields
 

@@ -1,35 +1,17 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
 import { prisma } from "../db.js";
 import { currentUser, requireAuth } from "./auth.js";
 import { writeAudit } from "./audit.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadRoot = path.resolve(__dirname, "../../uploads");
+import { attachmentRelativePath, normalizeUploadName, syncPrintableNoticeFile, uploadRoot } from "./noticeStorage.js";
 
 fs.mkdirSync(uploadRoot, { recursive: true });
 
-function normalizeUploadName(name: string) {
-  const decoded = Buffer.from(name, "latin1").toString("utf8");
-  return decoded.includes("�") ? name : decoded;
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadRoot),
-  filename: (_req, file, cb) => {
-    const originalName = normalizeUploadName(file.originalname);
-    const safeName = originalName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9.\-_]/g, "_");
-    cb(null, `${Date.now()}-${crypto.randomUUID()}-${safeName}`);
-  }
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -85,9 +67,12 @@ attachmentRouter.post("/notices/:id/attachments", upload.single("file"), async (
     return;
   }
 
-  const buffer = fs.readFileSync(req.file.path);
   const originalName = normalizeUploadName(req.file.originalname);
-  const checksum = crypto.createHash("sha256").update(buffer).digest("hex");
+  const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
+  const relativePath = attachmentRelativePath(notice.code, originalName);
+  const absolutePath = path.join(uploadRoot, relativePath);
+  fs.writeFileSync(absolutePath, req.file.buffer);
+
   const attachment = await prisma.attachment.create({
     data: {
       noticeId: notice.id,
@@ -96,11 +81,12 @@ attachmentRouter.post("/notices/:id/attachments", upload.single("file"), async (
       category: String(req.body.category || "Tài liệu hỗ trợ"),
       size: req.file.size,
       checksum,
-      path: req.file.filename
+      path: relativePath
     }
   });
 
   await writeAudit({ noticeId: notice.id, actorId: user.id, entity: "Attachment", action: "UPLOAD", after: attachment, ip: req.ip });
+  await syncPrintableNoticeFile(notice.id);
   res.status(201).json({ attachment });
 });
 

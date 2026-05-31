@@ -95,3 +95,16 @@ export function getActingRole(status: string, roles: string[], workshopType = "N
   if (status === "PENDING_NCPT_LEAD" && roles.includes("NCPT_LEAD")) return "NCPT_LEAD";
   return undefined;
 }
+
+export function getPendingStatusForRole(role: string, workshopType = "NON_STERILE") {
+  if (["NCPT_HEAD", "NCPT_LEAD", "NCPT_LEAD_STERILE", "NCPT_LEAD_NON_STERILE"].includes(role)) {
+    return {
+      status: "PENDING_NCPT_LEAD",
+      currentAssigneeRole: getNcptLeadRole(workshopType)
+    };
+  }
+  const step = workflowOrder.find((item) => item.requiredRole === role);
+  return step
+    ? { status: step.pendingStatus, currentAssigneeRole: step.requiredRole }
+    : undefined;
+}

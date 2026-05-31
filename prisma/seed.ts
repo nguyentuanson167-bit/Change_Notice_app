@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../server/src/db";
 import { DEMO_PASSWORD } from "../server/src/seedPasswords";
+import { syncPrintableNoticeFile } from "../server/src/modules/noticeStorage";
 
 const roles = [
   ["AUTHOR_STERILE", "Nhân viên nghiên cứu vô trùng"],
@@ -210,6 +211,10 @@ async function main() {
       createdBy: "admin"
     }
   });
+
+  for (const notice of await prisma.changeNotification.findMany({ select: { id: true } })) {
+    await syncPrintableNoticeFile(notice.id);
+  }
 }
 
 main()

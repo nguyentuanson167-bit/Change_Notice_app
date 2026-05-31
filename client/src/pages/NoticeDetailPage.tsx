@@ -112,6 +112,13 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
     }
   }
 
+  async function undoLastAction() {
+    if (!notice) return;
+    const confirmed = window.confirm(`Hoàn tác thao tác workflow cuối cùng trên phiếu ${notice.code}?`);
+    if (!confirmed) return;
+    await action("undo-last-action");
+  }
+
   if (!notice) return <div>{error || "Đang tải chi tiết..."}</div>;
   const canSubmit = ["DRAFT", "RETURNED", "RECALLED"].includes(notice.status) && notice.authorId === user.id;
   const canEdit = canSubmit || user.roles.includes("ADMIN");
@@ -121,6 +128,12 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
         (notice.status === "PENDING_NCPT_LEAD" && (user.roles.includes("NCPT_HEAD") || user.roles.includes("NCPT_LEAD"))))
   );
   const canDelete = user.roles.includes("ADMIN");
+  const latestWorkflowStep = notice.workflowSteps.at(-1);
+  const canUndoLastAction = Boolean(
+    latestWorkflowStep &&
+      ["SUBMITTED", "SIGNED", "RETURNED", "APPROVED"].includes(latestWorkflowStep.action) &&
+      (latestWorkflowStep.signer?.id === user.id || user.roles.includes("ADMIN"))
+  );
   const selectedAnnotations = selectedAttachment
     ? notice.annotations.filter((item) => item.attachmentId === selectedAttachment.id)
     : notice.annotations.filter((item) => !item.attachmentId);
@@ -135,6 +148,7 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
         <div className="actions">
           {canEdit && <button onClick={() => navigate({ page: "create", id })}>Sửa phiếu đang triển khai</button>}
           {["DISTRIBUTED", "APPROVED"].includes(notice.status) && <button onClick={createRevision}>Tạo bản sửa đổi</button>}
+          {canUndoLastAction && <button onClick={undoLastAction}>Hoàn tác thao tác vừa làm</button>}
           <button onClick={() => navigate({ page: "print", id })}>In phiếu</button>
           {canDelete && <button className="danger" onClick={deleteNotice}>Xóa phiếu</button>}
           <button onClick={() => navigate({ page: "browse" })}>Quay lại</button>
@@ -170,6 +184,10 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
       </section>
       <section className="panel">
         <h2>Tài liệu đính kèm, xem trước và ghi chú trực tiếp</h2>
+        <p className="hint">
+          Thư mục lưu trữ: <code>server/uploads/{notice.code}</code>. File bản in:
+          {" "}<a href={`/uploads/${notice.code}/Thong_bao_thay_doi.html`} target="_blank" rel="noreferrer">Thong_bao_thay_doi.html</a>
+        </p>
         {canEdit && (
           <div className="inline-form">
             <input type="file" accept=".pdf,.doc,.docx" onChange={(event) => upload(event.target.files)} />

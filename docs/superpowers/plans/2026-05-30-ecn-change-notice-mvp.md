@@ -1253,6 +1253,15 @@ The following fixes were added after initial MVP implementation:
   - Browse and detail screens expose a delete action only for Admin.
   - Backend deletes dependent annotations, replies, attachments, workflow steps, distributions, and notice audit rows before deleting the notice.
   - Backend writes a final Admin deletion audit event without a deleted notice foreign key.
+- Add workflow undo:
+  - Detail page shows `Hoàn tác thao tác vừa làm` for the latest workflow actor or Admin.
+  - Backend restores the previous workflow status for submitted, signed, returned, and final approved actions.
+  - Final approval undo also removes generated distribution rows.
+- Add per-notice storage folders:
+  - Store attachments under `server/uploads/<TBTĐ code>/` instead of directly under upload root.
+  - Generate `Thong_bao_thay_doi.html` in the same folder as the printable notice file.
+  - Regenerate the print HTML after notice changes and attachment uploads.
+  - Add tests proving attachment path and printable notice file are created inside the TBTĐ folder.
 - Verification for this follow-up:
   - Run `npm run test`.
   - Run `npm run build`.

@@ -1,4 +1,6 @@
 import request from "supertest";
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { app } from "../app.js";
 
@@ -119,6 +121,26 @@ describe("workflow", () => {
     expect(signed.body.notice.workflowSteps.at(-1).requiredRole).toBe("NCPT_HEAD");
   });
 
+  it("undoes the latest workflow action by the actor", async () => {
+    const author = await login("author");
+    const create = await author.post("/api/notices").send({
+      ...noticePayload(`undo-${Date.now()}`),
+      workshopType: "NON_STERILE"
+    });
+    const id = create.body.notice.id;
+    await author.post(`/api/notices/${id}/submit`).send();
+
+    const lead = await login("lead");
+    const signed = await lead.post(`/api/notices/${id}/sign`).send();
+    expect(signed.status).toBe(200);
+    expect(signed.body.notice.status).toBe("PENDING_QA_DEPUTY");
+
+    const undone = await lead.post(`/api/notices/${id}/undo-last-action`).send();
+    expect(undone.status).toBe(200);
+    expect(undone.body.notice.status).toBe("PENDING_NCPT_LEAD");
+    expect(undone.body.notice.currentAssigneeRole).toBe("NCPT_LEAD_NON_STERILE");
+  });
+
   it("scopes NCPT lead return action by workshop", async () => {
     const sterileAuthor = await login("author2");
     const createSterile = await sterileAuthor.post("/api/notices").send({
@@ -182,5 +204,28 @@ describe("workflow", () => {
 
     const getDeleted = await admin.get(`/api/notices/${id}`).send();
     expect(getDeleted.status).toBe(404);
+  });
+
+  it("stores printable notice and attachments inside the notice folder", async () => {
+    const author = await login("author");
+    const create = await author.post("/api/notices").send({
+      ...noticePayload(`storage-${Date.now()}`),
+      workshopType: "NON_STERILE"
+    });
+    expect(create.status).toBe(201);
+    const notice = create.body.notice;
+
+    const upload = await author
+      .post(`/api/notices/${notice.id}/attachments`)
+      .attach("file", Buffer.from("attachment content"), {
+        filename: "tai-lieu-test.pdf",
+        contentType: "application/pdf"
+      });
+    expect(upload.status).toBe(201);
+    expect(upload.body.attachment.path).toContain(`${notice.code}/`);
+
+    const uploadRoot = path.resolve(process.cwd(), "uploads");
+    expect(fs.existsSync(path.join(uploadRoot, notice.code, "Thong_bao_thay_doi.html"))).toBe(true);
+    expect(fs.existsSync(path.join(uploadRoot, upload.body.attachment.path))).toBe(true);
   });
 });
