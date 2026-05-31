@@ -1,6 +1,6 @@
 # eCN Change Notice MVP
 
-Local MVP for managing Thong bao thay doi (TBTD).
+Local MVP for managing Thông báo thay đổi (TBTĐ).
 
 ## Run locally
 
@@ -30,6 +30,11 @@ All demo accounts use password `password123`.
 | director | Production Director |
 | admin | Admin |
 | viewer | Viewer |
+
+## Admin functions
+
+- Create and edit accounts, departments, workshop scope, roles, and active status.
+- Delete TBTĐ records from the browse list or detail page.
 
 ## MVP limitations
 

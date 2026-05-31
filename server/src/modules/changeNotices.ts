@@ -232,6 +232,48 @@ changeNoticeRouter.put("/:id", async (req, res) => {
   res.json({ notice });
 });
 
+changeNoticeRouter.delete("/:id", async (req, res) => {
+  const user = currentUser(res);
+  if (!user.roles.includes("ADMIN")) {
+    res.status(403).json({ message: "Chỉ Admin được xóa phiếu TBTĐ." });
+    return;
+  }
+
+  const before = await prisma.changeNotification.findUnique({
+    where: { id: req.params.id },
+    include: includeNotice()
+  });
+  if (!before) {
+    res.status(404).json({ message: "Không tìm thấy TBTĐ." });
+    return;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.changeNotification.updateMany({
+      where: { originalNoticeId: before.id },
+      data: { originalNoticeId: null }
+    });
+    await tx.annotationReply.deleteMany({
+      where: { annotation: { noticeId: before.id } }
+    });
+    await tx.annotation.deleteMany({ where: { noticeId: before.id } });
+    await tx.distribution.deleteMany({ where: { noticeId: before.id } });
+    await tx.workflowStep.deleteMany({ where: { noticeId: before.id } });
+    await tx.attachment.deleteMany({ where: { noticeId: before.id } });
+    await tx.auditLog.deleteMany({ where: { noticeId: before.id } });
+    await tx.changeNotification.delete({ where: { id: before.id } });
+  });
+
+  await writeAudit({
+    actorId: user.id,
+    entity: "ChangeNotification",
+    action: "DELETE",
+    before,
+    ip: req.ip
+  });
+  res.json({ notice: before });
+});
+
 changeNoticeRouter.post("/:id/submit", async (req, res) => {
   const user = currentUser(res);
   const before = await prisma.changeNotification.findUnique({ where: { id: req.params.id } });

@@ -96,6 +96,7 @@ NCPT responsibility is scoped by workshop:
 - `NCPT_LEAD_STERILE` / tổ trưởng tổ nghiên cứu vô trùng can sign/approve or return the NCPT review step for `STERILE` TBTĐ records only.
 - `NCPT_LEAD_NON_STERILE` / tổ trưởng tổ nghiên cứu không vô trùng can sign/approve or return the NCPT review step for `NON_STERILE` TBTĐ records only.
 - `NCPT_HEAD` can approve the NCPT review step for either workshop as a substitute for the relevant team lead.
+- The detail page must show sign/return controls for `NCPT_HEAD` whenever a notice is waiting at `PENDING_NCPT_LEAD`, even when `currentAssigneeRole` stores the scoped team-lead role.
 
 ## Browsing And Retrieval
 
@@ -137,6 +138,7 @@ Quick actions:
 - Continue editing when the logged-in author owns a draft, returned, or recalled item.
 - Sign/return when the logged-in user is eligible.
 - Acknowledge receipt when the notice is distributed to the user's department.
+- Delete a TBTĐ record when the logged-in user is Admin.
 
 The detail page is reachable from every row and includes metadata, attachments, workflow timeline, signatures, annotation threads, distribution table, revision chain, print actions, and audit trail. Access rules are still enforced by the backend; the browser view only lists records the logged-in user can access.
 

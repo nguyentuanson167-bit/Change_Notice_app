@@ -98,10 +98,29 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
     await load();
   }
 
+  async function deleteNotice() {
+    if (!notice) return;
+    const confirmed = window.confirm(`Xóa phiếu ${notice.code}? Thao tác này chỉ dành cho Admin và không thể hoàn tác.`);
+    if (!confirmed) return;
+
+    setError("");
+    try {
+      await api(`/api/notices/${notice.id}`, { method: "DELETE" });
+      navigate({ page: "browse" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không xóa được phiếu.");
+    }
+  }
+
   if (!notice) return <div>{error || "Đang tải chi tiết..."}</div>;
   const canSubmit = ["DRAFT", "RETURNED", "RECALLED"].includes(notice.status) && notice.authorId === user.id;
   const canEdit = canSubmit || user.roles.includes("ADMIN");
-  const canSign = notice.currentAssigneeRole && user.roles.includes(notice.currentAssigneeRole);
+  const canSign = Boolean(
+    notice.currentAssigneeRole &&
+      (user.roles.includes(notice.currentAssigneeRole) ||
+        (notice.status === "PENDING_NCPT_LEAD" && (user.roles.includes("NCPT_HEAD") || user.roles.includes("NCPT_LEAD"))))
+  );
+  const canDelete = user.roles.includes("ADMIN");
   const selectedAnnotations = selectedAttachment
     ? notice.annotations.filter((item) => item.attachmentId === selectedAttachment.id)
     : notice.annotations.filter((item) => !item.attachmentId);
@@ -117,6 +136,7 @@ export function NoticeDetailPage({ id, user, navigate }: { id: string; user: Use
           {canEdit && <button onClick={() => navigate({ page: "create", id })}>Sửa phiếu đang triển khai</button>}
           {["DISTRIBUTED", "APPROVED"].includes(notice.status) && <button onClick={createRevision}>Tạo bản sửa đổi</button>}
           <button onClick={() => navigate({ page: "print", id })}>In phiếu</button>
+          {canDelete && <button className="danger" onClick={deleteNotice}>Xóa phiếu</button>}
           <button onClick={() => navigate({ page: "browse" })}>Quay lại</button>
         </div>
       </div>

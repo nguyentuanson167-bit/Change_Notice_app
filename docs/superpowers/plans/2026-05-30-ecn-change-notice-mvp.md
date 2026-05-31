@@ -1243,6 +1243,16 @@ The following fixes were added after initial MVP implementation:
   - Restrict team leads to signing/returning only the TBTĐ records in their assigned workshop scope.
   - Allow `NCPT_HEAD` to approve the NCPT step for either workshop in place of the team lead.
   - Add workflow tests for wrong-workshop lead rejection and NCPT head substitution.
+- Add Admin account editing:
+  - Admin can open an existing account into the account form.
+  - Admin can update username, name, email, department, workshop scope, and role assignments.
+- Fix `PENDING_NCPT_LEAD` action visibility:
+  - Detail page shows sign/return controls for `NCPT_HEAD` when the notice is waiting for a scoped NCPT lead.
+  - Backend test confirms `NCPT_HEAD` can sign sterile and non-sterile notices at the NCPT step.
+- Add Admin notice deletion:
+  - Browse and detail screens expose a delete action only for Admin.
+  - Backend deletes dependent annotations, replies, attachments, workflow steps, distributions, and notice audit rows before deleting the notice.
+  - Backend writes a final Admin deletion audit event without a deleted notice foreign key.
 - Verification for this follow-up:
   - Run `npm run test`.
   - Run `npm run build`.

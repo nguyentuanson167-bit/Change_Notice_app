@@ -34,6 +34,16 @@ button.active {
   color: #1f5fbf;
 }
 
+button.danger {
+  border-color: #d45b5b;
+  color: #a12626;
+}
+
+button.danger:hover {
+  background: #fff0f0;
+  border-color: #a12626;
+}
+
 input,
 select,
 textarea {

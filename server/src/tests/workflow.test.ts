@@ -103,6 +103,22 @@ describe("workflow", () => {
     expect(headSigned.body.notice.status).toBe("PENDING_QA_DEPUTY");
   });
 
+  it("allows NCPT head to sign a notice waiting for scoped NCPT lead", async () => {
+    const sterileAuthor = await login("author2");
+    const createSterile = await sterileAuthor.post("/api/notices").send({
+      ...noticePayload(`head-sterile-${Date.now()}`),
+      workshopType: "STERILE"
+    });
+    const sterileId = createSterile.body.notice.id;
+    await sterileAuthor.post(`/api/notices/${sterileId}/submit`).send();
+
+    const ncptHead = await login("ncpt-head");
+    const signed = await ncptHead.post(`/api/notices/${sterileId}/sign`).send();
+    expect(signed.status).toBe(200);
+    expect(signed.body.notice.status).toBe("PENDING_QA_DEPUTY");
+    expect(signed.body.notice.workflowSteps.at(-1).requiredRole).toBe("NCPT_HEAD");
+  });
+
   it("scopes NCPT lead return action by workshop", async () => {
     const sterileAuthor = await login("author2");
     const createSterile = await sterileAuthor.post("/api/notices").send({
@@ -146,5 +162,25 @@ describe("workflow", () => {
 
     const submit = await nonSterileAuthor.post(`/api/notices/${id}/submit`).send();
     expect(submit.status).toBe(200);
+  });
+
+  it("allows only admin to delete notices", async () => {
+    const author = await login("author");
+    const create = await author.post("/api/notices").send({
+      ...noticePayload(`delete-${Date.now()}`),
+      workshopType: "NON_STERILE"
+    });
+    expect(create.status).toBe(201);
+    const id = create.body.notice.id;
+
+    const forbidden = await author.delete(`/api/notices/${id}`).send();
+    expect(forbidden.status).toBe(403);
+
+    const admin = await login("admin");
+    const deleted = await admin.delete(`/api/notices/${id}`).send();
+    expect(deleted.status).toBe(200);
+
+    const getDeleted = await admin.get(`/api/notices/${id}`).send();
+    expect(getDeleted.status).toBe(404);
   });
 });

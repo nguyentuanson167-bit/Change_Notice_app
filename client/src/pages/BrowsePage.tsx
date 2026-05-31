@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { NavState } from "../App";
-import type { ChangeNotice } from "../types";
+import type { ChangeNotice, User } from "../types";
 
 const views = [
   ["", "Tất cả"],
@@ -19,10 +19,12 @@ const workshopLabels = {
 } as const;
 
 export function BrowsePage({
+  user,
   navigate,
   defaultView,
   defaultWorkshopType
 }: {
+  user: User;
   navigate: (nav: NavState) => void;
   defaultView?: string;
   defaultWorkshopType?: "STERILE" | "NON_STERILE";
@@ -33,21 +35,38 @@ export function BrowsePage({
   const [workshopType, setWorkshopType] = useState<"" | "STERILE" | "NON_STERILE">(defaultWorkshopType || "");
   const [notices, setNotices] = useState<ChangeNotice[]>([]);
   const [error, setError] = useState("");
+  const isAdmin = user.roles.includes("ADMIN");
 
-  useEffect(() => {
+  async function load() {
     const params = new URLSearchParams();
     if (view) params.set("view", view);
     if (q) params.set("q", q);
     if (status) params.set("status", status);
     if (workshopType) params.set("workshopType", workshopType);
-    api<{ notices: ChangeNotice[] }>(`/api/notices?${params}`)
-      .then((res) => setNotices(res.notices))
-      .catch((err) => setError(err.message));
+    const res = await api<{ notices: ChangeNotice[] }>(`/api/notices?${params}`);
+    setNotices(res.notices);
+  }
+
+  useEffect(() => {
+    load().catch((err) => setError(err.message));
   }, [view, q, status, workshopType]);
 
   useEffect(() => {
     setWorkshopType(defaultWorkshopType || "");
   }, [defaultWorkshopType]);
+
+  async function deleteNotice(notice: ChangeNotice) {
+    const confirmed = window.confirm(`Xóa phiếu ${notice.code}? Thao tác này chỉ dành cho Admin và không thể hoàn tác.`);
+    if (!confirmed) return;
+
+    setError("");
+    try {
+      await api(`/api/notices/${notice.id}`, { method: "DELETE" });
+      setNotices((current) => current.filter((item) => item.id !== notice.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không xóa được phiếu.");
+    }
+  }
 
   return (
     <div>
@@ -118,6 +137,7 @@ export function BrowsePage({
                     <button onClick={() => navigate({ page: "create", id: notice.id })}>Sửa</button>
                   )}
                   <button onClick={() => navigate({ page: "print", id: notice.id })}>In phiếu</button>
+                  {isAdmin && <button className="danger" onClick={() => deleteNotice(notice)}>Xóa</button>}
                 </td>
               </tr>
             ))}

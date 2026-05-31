@@ -20,4 +20,36 @@ describe("auth", () => {
 
     expect(res.status).toBe(401);
   });
+
+  it("allows admin to update account profile and roles", async () => {
+    const agent = request.agent(app);
+    const login = await agent.post("/api/auth/login").send({ username: "admin", password: "password123" });
+    expect(login.status).toBe(200);
+
+    const suffix = Date.now();
+    const create = await agent.post("/api/admin/users").send({
+      username: `edit-user-${suffix}`,
+      name: "Tai khoan test",
+      email: `edit-user-${suffix}@vinphaco.local`,
+      department: "Phong test",
+      workshopType: "NON_STERILE",
+      roles: ["VIEWER"]
+    });
+    expect(create.status).toBe(201);
+
+    const update = await agent.put(`/api/admin/users/${create.body.user.id}`).send({
+      username: `edited-user-${suffix}`,
+      name: "Tai khoan da sua",
+      email: `edited-user-${suffix}@vinphaco.local`,
+      department: "Phong NCPT / R&D",
+      workshopType: "STERILE",
+      roles: ["AUTHOR_STERILE", "NCPT_LEAD_STERILE"]
+    });
+    expect(update.status).toBe(200);
+    expect(update.body.user.name).toBe("Tai khoan da sua");
+    expect(update.body.user.workshopType).toBe("STERILE");
+    expect(update.body.user.roles.map((item: { role: { code: string } }) => item.role.code)).toEqual(
+      expect.arrayContaining(["AUTHOR_STERILE", "NCPT_LEAD_STERILE"])
+    );
+  });
 });
